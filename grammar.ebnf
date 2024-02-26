@@ -1,0 +1,97 @@
+//
+// EBNF to generate railroad diagram at https://www.bottlecaps.de/rr/ui
+//
+//
+// From http://127.0.0.1:8888/grammar.json
+//
+
+source_file ::= program
+
+WORD ::= [a-zA-Z__][a-zA-Z_0-9_]*
+
+IO_NUMBER ::= [1-9][0-9]*
+
+linebreak ::= newline_list
+
+program ::= linebreak ( complete_command ( newline_list complete_command )* linebreak )?
+
+complete_command ::= list separator_op?
+
+list ::= and_or ( separator_op and_or )*
+
+and_or ::= pipeline ( ( '&&' | '||' ) linebreak pipeline )*
+
+pipeline ::= '!'? pipe_sequence
+
+pipe_sequence ::= command ( '|' linebreak command )*
+
+command ::=  simple_command | compound_command redirect_list? | function_definition
+
+compound_command ::=  brace_group | subshell	| for_clause	| case_clause	| if_clause	| while_clause	| until_clause
+
+subshell ::=	 '(' compound_list ')'
+
+compound_list ::=	 linebreak term separator?
+
+term ::=	 and_or ( separator and_or )*
+
+for_clause ::=	 'for' _name ( ( linebreak 'in' WORD* )? sequential_sep )? do_group
+
+_name ::=	 WORD
+
+case_clause ::=	 'case' WORD linebreak 'in' linebreak ( case_list | case_list_ns )? 'esac'
+
+case_list_ns ::=	 case_list? case_item_ns
+
+case_list ::=	 case_item+
+
+case_item_ns ::=	 '('? pattern ')' ( linebreak | compound_list )
+
+case_item ::=	 '('? pattern ')' ( linebreak | compound_list ) ';;' linebreak
+
+pattern ::=	 WORD ( '|' WORD )*
+
+if_clause ::=	 'if' compound_list 'then' compound_list ( ( 'elif' compound_list 'then' compound_list )* ( 'elif' compound_list 'then' | 'else' ) compound_list )? 'fi'
+
+while_clause ::=	 'while' compound_list do_group
+
+until_clause ::=	 'until' compound_list do_group
+
+function_definition ::=	 fname '(' ')' linebreak function_body
+
+function_body ::=	 compound_command redirect_list?
+
+fname ::=	 WORD
+
+brace_group ::=	 '{' compound_list '}'
+
+do_group ::=	 'do' compound_list 'done'
+
+simple_command ::=	 cmd_prefix ( cmd_word cmd_prefix? )? | cmd_name cmd_prefix?
+
+cmd_name ::=	 WORD
+
+cmd_word ::=	 WORD
+
+cmd_prefix ::=	 io_redirect | WORD+
+
+redirect_list ::=	 io_redirect+
+
+io_redirect ::=	 IO_NUMBER? ( io_file | io_here )
+
+io_file ::=	 ( '<' | '<&' | '>' | '>&' | '>>' | '<>' | '>|' ) filename
+
+filename ::=	 WORD
+
+io_here ::=	 ( '<<' | '<<-' ) here_end
+
+here_end ::=	 WORD
+
+newline_list ::=	 '\n' +
+
+separator_op ::=	 '&'	| ';'
+
+separator ::=	 separator_op linebreak	| newline_list
+
+sequential_sep ::=	 ';' linebreak	| newline_list
+

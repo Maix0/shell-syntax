@@ -1,0 +1,98 @@
+;/* converted on Fri Feb 23, 2024, 15:17 (UTC+01) by bison-to-w3c v0.68-SNAPSHOT which is Copyright (c) 2011-2024 by Gunther Rademacher <grd@gmx.net> */
+_alpha              ::= 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G'
+                      | 'H' | 'I' | 'J' | 'K' | 'L' | 'M' | 'N'
+                      | 'O' | 'P' | 'Q' | 'R' | 'S' | 'T' | 'U'
+                      | 'V' | 'W' | 'X' | 'Y' | 'Z' | 'a' | 'b'
+                      | 'c' | 'd' | 'e' | 'f' | 'g' | 'h' | 'i'
+                      | 'j' | 'k' | 'l' | 'm' | 'n' | 'o' | 'p'
+                      | 'q' | 'r' | 's' | 't' | 'u' | 'v' | 'w'
+                      | 'x' | 'y' | 'z' ;
+_num_no_zero        ::= '1' | '2' |'3' |'4' | '5' | '6' | '7' | '8' | '9'
+_num_zero           ::= '0' | _num_no_zero
+_number             ::= _num_no_zero  _num_zero+
+_ALPHA_NUM_WORD     ::= (_alpha | '_') (_alpha | _number | '_')*
+WORD                ::= _ALPHA_NUM_WORD
+ASSIGNMENT_WORD     ::= _ALPHA_NUM_WORD
+IO_NUMBER           ::= _number
+NAME                ::= _ALPHA_NUM_WORD
+NEWLINE 			::= '\n'
+and_if              ::= '&&'
+or_if               ::= '||'
+dsemi               ::= ';;'
+dless               ::= '<<'
+dgreat              ::= '>>'
+lessand             ::= '<&'
+greatand            ::= '>&'
+lessgreat           ::= '<>'
+dlessdash           ::= '<<-'
+clobber             ::= '>|'
+If                  ::= 'if'
+Then                ::= 'then'
+Else                ::= 'else'
+Elif                ::= 'elif'
+Fi                  ::= 'fi'
+Do                  ::= 'do'
+Done                ::= 'done'
+Case                ::= 'case'
+Esac                ::= 'esac'
+While               ::= 'while'
+Until               ::= 'until'
+For                 ::= 'for'
+Lbrace              ::= '{'
+Rbrace              ::= '}'
+Bang                ::= '!'
+In                  ::= 'in'
+linebreak           ::= newline_list?
+program             ::= linebreak ( complete_command ( newline_list complete_command )* linebreak )?
+complete_command    ::= list separator_op?
+list                ::= and_or ( separator_op and_or )*
+and_or              ::= pipeline ( ( and_if | or_if ) linebreak pipeline )*
+pipeline            ::= Bang? pipe_sequence
+pipe_sequence       ::= command ( '|' linebreak command )*
+command             ::= simple_command | compound_command redirect_list? | function_definition
+compound_command    ::= brace_group | subshell | for_clause | case_clause | if_clause | while_clause | until_clause
+subshell            ::= '(' compound_list ')'
+compound_list       ::= linebreak term separator?
+term                ::= and_or ( separator and_or )*
+for_clause          ::= For name ( ( linebreak in WORD* )? sequential_sep )? do_group
+; /* Apply rule 5 */
+name                ::= NAME
+; /* Apply rule 6 */
+in                  ::= In
+case_clause         ::= Case WORD linebreak in linebreak ( case_list | case_list_ns )? Esac
+case_list_ns        ::= case_list? case_item_ns
+case_list           ::= case_item+
+case_item_ns        ::= '('? pattern ')' ( linebreak | compound_list )
+case_item           ::= '('? pattern ')' ( linebreak | compound_list ) dsemi linebreak
+; 													  rule 4  | not rule 4
+pattern             ::= WORD  ( '|' WORD )*
+if_clause           ::= If compound_list Then compound_list ( ( Elif compound_list Then compound_list )* ( Elif compound_list Then | Else ) compound_list )? Fi
+while_clause        ::= While compound_list do_group
+until_clause        ::= Until compound_list do_group
+function_definition ::= fname '(' ')' linebreak function_body
+; /* Apply rule 9 */
+function_body       ::= compound_command redirect_list?
+; /* Apply rule 8 */
+fname               ::= NAME
+brace_group         ::= Lbrace compound_list Rbrace
+; /* Apply rule 6 */
+do_group            ::= Do compound_list Done
+simple_command      ::= cmd_prefix ( cmd_word cmd_suffix? )? | cmd_name cmd_suffix?
+; /* Apply rule 7a */
+cmd_name            ::= WORD
+; /* Apply rule 7b */
+cmd_word            ::= WORD
+cmd_prefix          ::= ( io_redirect | ASSIGNMENT_WORD )+
+cmd_suffix          ::= ( io_redirect | WORD )+
+redirect_list       ::= io_redirect+
+io_redirect         ::= IO_NUMBER? ( io_file | io_here )
+io_file             ::= ( '<' | lessand | '>' | greatand | dgreat | lessgreat | clobber ) filename
+; /* Apply rule 2 */
+filename            ::= WORD
+io_here             ::= ( dless | dlessdash ) here_end
+; /* Apply rule 5 */
+here_end            ::= WORD
+newline_list        ::= NEWLINE+
+separator_op        ::= '&' | ';'
+separator           ::= separator_op linebreak | newline_list
+sequential_sep      ::= ';' linebreak  | newline_list

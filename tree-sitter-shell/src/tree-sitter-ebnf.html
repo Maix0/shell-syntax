@@ -1,0 +1,832 @@
+<html><head>
+<meta http-equiv="content-type" content="text/html; charset=windows-1252"><style class="darkreader darkreader--fallback" media="screen"></style><style class="darkreader darkreader--text" media="screen"></style><style class="darkreader darkreader--invert" media="screen">.jfk-bubble.gtx-bubble, .captcheck_answer_label > input + img, span#closed_text > img[src^="https://www.gstatic.com/images/branding/googlelogo"], span[data-href^="https://www.hcaptcha.com/"] > #icon, #bit-notification-bar-iframe, ::-webkit-calendar-picker-indicator, img.Wirisformula {
+    filter: invert(100%) hue-rotate(180deg) contrast(90%) !important;
+}</style><style class="darkreader darkreader--inline" media="screen">[data-darkreader-inline-bgcolor] {
+  background-color: var(--darkreader-inline-bgcolor) !important;
+}
+[data-darkreader-inline-bgimage] {
+  background-image: var(--darkreader-inline-bgimage) !important;
+}
+[data-darkreader-inline-border] {
+  border-color: var(--darkreader-inline-border) !important;
+}
+[data-darkreader-inline-border-bottom] {
+  border-bottom-color: var(--darkreader-inline-border-bottom) !important;
+}
+[data-darkreader-inline-border-left] {
+  border-left-color: var(--darkreader-inline-border-left) !important;
+}
+[data-darkreader-inline-border-right] {
+  border-right-color: var(--darkreader-inline-border-right) !important;
+}
+[data-darkreader-inline-border-top] {
+  border-top-color: var(--darkreader-inline-border-top) !important;
+}
+[data-darkreader-inline-boxshadow] {
+  box-shadow: var(--darkreader-inline-boxshadow) !important;
+}
+[data-darkreader-inline-color] {
+  color: var(--darkreader-inline-color) !important;
+}
+[data-darkreader-inline-fill] {
+  fill: var(--darkreader-inline-fill) !important;
+}
+[data-darkreader-inline-stroke] {
+  stroke: var(--darkreader-inline-stroke) !important;
+}
+[data-darkreader-inline-outline] {
+  outline-color: var(--darkreader-inline-outline) !important;
+}
+[data-darkreader-inline-stopcolor] {
+  stop-color: var(--darkreader-inline-stopcolor) !important;
+}
+[data-darkreader-inline-bg] {
+  background: var(--darkreader-inline-bg) !important;
+}</style><style class="darkreader darkreader--variables" media="screen">:root {
+   --darkreader-neutral-background: #131516;
+   --darkreader-neutral-text: #d8d4cf;
+   --darkreader-selection-background: #004daa;
+   --darkreader-selection-text: #e8e6e3;
+}</style><style class="darkreader darkreader--root-vars" media="screen"></style><style class="darkreader darkreader--user-agent" media="screen">html {
+    background-color: #181a1b !important;
+}
+html {
+    color-scheme: dark !important;
+}
+html, body {
+    background-color: #181a1b;
+}
+html, body {
+    border-color: #736b5e;
+    color: #e8e6e3;
+}
+a {
+    color: #3391ff;
+}
+table {
+    border-color: #545b5e;
+}
+::placeholder {
+    color: #b2aba1;
+}
+input:-webkit-autofill,
+textarea:-webkit-autofill,
+select:-webkit-autofill {
+    background-color: #404400 !important;
+    color: #e8e6e3 !important;
+}
+::-webkit-scrollbar {
+    background-color: #202324;
+    color: #aba499;
+}
+::-webkit-scrollbar-thumb {
+    background-color: #454a4d;
+}
+::-webkit-scrollbar-thumb:hover {
+    background-color: #575e62;
+}
+::-webkit-scrollbar-thumb:active {
+    background-color: #484e51;
+}
+::-webkit-scrollbar-corner {
+    background-color: #181a1b;
+}
+* {
+    scrollbar-color: #454a4d #202324;
+}
+::selection {
+    background-color: #004daa !important;
+    color: #e8e6e3 !important;
+}
+::-moz-selection {
+    background-color: #004daa !important;
+    color: #e8e6e3 !important;
+}</style>
+<title>Tree-sitter converter to EBNF for railroad diagram</title>
+<meta name="author" content="Domingo Alvarez Duarte">
+<meta name="contact" content="mingodad _at_ gmail _dot_ com">
+<script type="text/javascript">
+
+	const INDENT = "\t";
+
+	function pattern2ebnf(pattern) {
+		let inClass = false;
+		let inQuote = false;
+		let hasDQ = false;
+		let hasSQ = false;
+		let imax = pattern.length;
+		let quote = "'";
+		let inString = "";
+		let ch = "";
+		var result = "";
+		var chAt = function(idx) {if(idx < imax) return pattern[idx]; return null;}
+		var addCh = function(ach) {if(inClass) result += ach; else inString += ach;}
+		var checkAddStr = function() {
+				if(inString.length > 0) {
+					if(hasSQ) quote = '"';
+					let new_str = quote + inString + quote; inString = "";
+					result += new_str
+					if(hasSQ) quote = "'";
+				}
+			}
+		var addClass = function(aclass) {if(inClass) result += aclass; else { checkAddStr(); result += '[' + aclass + ']';}}
+		for (let i = 0; i < imax; ++i) {
+			ch = pattern[i];
+			//print(ch);
+			switch(ch) {
+				case '[': {
+					checkAddStr();
+					result += ch; inClass = true;
+				}
+				break;
+				case ']': {
+					result += ch; inClass = false;
+				}
+				break;
+				case '|':
+				case '(': {
+					checkAddStr();
+					result += ch;
+				}
+				break;
+				case ')': {
+					checkAddStr();
+					result += ch;
+				}
+				break;
+				case '#': {
+					if(inClass) result += "#x23";
+					else addCh(ch);
+				}
+				break;
+				case '\t':
+					if(inClass) result += "#x09";
+					else addCh("\\t");
+				break;
+				case '\n':
+					if(inClass) result += "#x0A";
+					else addCh("\\n");
+				break;
+				case '\r':
+					if(inClass) result += "#x0D";
+					else addCh("\\r");
+				break;
+				case '\\': {
+					let i2 = i+1;
+					let ch2 = chAt(i2);
+					if(ch2 != null) {
+						//print(ch, ch2);
+						switch(ch2) {
+							case '[': addCh("#x5B"); i=i2; break;
+							case ']': addCh("#x5D"); i=i2; break;
+							case 'a': addCh("#x07"); i=i2; break;
+							case 'b': addCh("#x08"); i=i2; break;
+							case 't': addCh("#x09"); i=i2; break;
+							case 'n': addCh("#x0A"); i=i2; break;
+							case 'v': addCh("#x0B"); i=i2; break;
+							case 'f': addCh("#x0C"); i=i2; break;
+							case 'r': addCh("#x0D"); i=i2; break;
+							case '\\': addCh("\\"); i=i2; break;
+							case 's': addClass(" #x09#x0A#x0B#x0C#x0D");i=i2; break;
+							case 'd': addClass("0-9");i=i2; break;
+							case 'w': addClass("a-zA-Z_");i=i2; break;
+							case '-': addCh("#x2D"); ++i2; break;
+							case '.': ++i2; break;
+							case 'u': {
+								if( chAt(i2+2) == '{') {
+									i2 += 3;
+									addCh("#x");
+									for (; i2 < imax; ++i2) {
+										ch2 = chAt(i2);
+										if(ch2 == '}') break;
+										addCh(ch2);
+									}
+
+								}
+								else {addCh("\\u"); i=i2;}
+							}
+							break;
+							default:
+								addCh(ch);
+						}
+					}
+				}
+				break;
+				case '*':
+				case '+':
+				case '?': {
+					checkAddStr();
+					result += ch;
+				}
+				break;
+				case '"': hasDQ = true; addCh(ch); break;
+				case "'": hasSQ = true; addCh(ch); break;
+				default:
+					addCh(ch);
+				break;
+			}
+		}
+		checkAddStr();
+		return result;
+	}
+
+	function parseJsonGrammar(json, lang_raw_url, rule_sep, choice_sep, isEbnfRR)
+	{
+		json = JSON.parse(json);
+		//print(json);
+		var result = "";
+		result += "//\n// EBNF to generate railroad diagram at https://www.bottlecaps.de/rr/ui\n//\n";
+		result += "//\n// From " + lang_raw_url + "\n//\n\n";
+
+		let isRuleOptional = function(rule) {
+			let isChoice = rule.type == "CHOICE";
+			let isOptional = isChoice && rule.members.length == 2 && rule.members[1].type == "BLANK";
+			return isOptional;
+		};
+
+		let manageRule = function (name, rule, depth) {
+			//print(name, rule.type); //, typeof rule);
+			switch(rule.type)
+			{
+				case "ALIAS": {
+					let needGroup = rule.content.hasOwnProperty('members');
+					let isOptional = isRuleOptional(rule.content);
+					if(isOptional && !rule.content.members[0].hasOwnProperty('members')) {
+						needGroup = false;
+					}
+					if(needGroup) result += " (";
+					manageRule(rule.type, rule.content, depth+1);
+					if(needGroup) result += " )";
+					if(isOptional) result += "?";
+				}
+				break;
+
+				case "BLANK":
+					result += " /*empty*/";
+				break;
+
+				case "CHOICE": {
+					let members = rule.members;
+					let isOptional = isRuleOptional(rule);
+					if(isOptional) {
+						manageRule(rule.type, members[0], depth+1);
+					}
+					else
+					{
+						for(var idx in members) {
+							let child = members[idx];
+							let isChildChoice = child.type == "CHOICE";
+							if(idx > 0) {
+								if((depth <1)) {
+									result += "\n" + INDENT + choice_sep;
+								}
+								else
+								{
+									result += " " + choice_sep;
+								}
+							}
+							manageRule(rule.type, child, (isChildChoice ? depth : depth+1));
+						}
+					}
+				}
+				break;
+
+				case "FIELD": {
+					//print(rule.type, rule.name);
+					let needGroup = rule.content.hasOwnProperty('members');
+					let isOptional = isRuleOptional(rule.content);
+					if(isOptional && !rule.content.members[0].hasOwnProperty('members')) {
+						needGroup = false;
+					}
+					if(needGroup) result += " (";
+					manageRule(rule.type, rule.content, depth+1);
+					if(needGroup) result += " )";
+					if(isOptional) result += "?";
+				}
+				break;
+
+				case "PATTERN": {
+					//result += " " + pattern2str(rule.value);
+					result += " " + pattern2ebnf(rule.value);
+
+					//let value = rule.value.replaceAll(/\\d/g, "[0-9]");
+					//value = value.replaceAll(/\[\[0\-9\]/g, "[0-9");
+					//if(isEbnfRR) {
+					//	value = value.replaceAll(/\\w/g, "[a-zA-Z]");
+					//	value = value.replaceAll(/\\([.*?+'])/g, "'$1'");
+					//	//value = value.replaceAll("\\$", "'$'");
+					//	value = value.replaceAll(/([^\\])\\]/g, "$1#x5D");
+					//	value = value.replaceAll("\t", "#x09");
+					//	value = value.replaceAll("\r", "#x0D");
+					//	value = value.replaceAll("\n", "#x0A");
+					//	value = value.replaceAll("_|", "'_'|");
+					//	value = value.replace(/^(0x|0b)/, "'$1'");
+					//	value = value.replaceAll(/({[^}]+?})/g, "+/*$1*/");
+					//}
+					//value = value.replaceAll("[0-9]]", "0-9]");
+					//value = value.replaceAll("![", "[^");
+					//result += " " + value;
+				}
+				break;
+
+				case "PREC":
+				case "PREC_DYNAMIC":
+				case "PREC_LEFT":
+				case "PREC_RIGHT":
+					//result += "  (";
+					manageRule(rule.type, rule.content, depth+1);
+					//result += " )";
+				break;
+
+				case "REPEAT": {
+					let needGroup = rule.content.hasOwnProperty('members');
+					if(needGroup) result += " (";
+					manageRule(rule.type, rule.content, 1, depth+1);
+					if(needGroup) result += " )";
+					result += "*";
+				}
+				break;
+
+				case "REPEAT1": {
+					let needGroup = rule.content.hasOwnProperty('members');
+					if(needGroup) result += " (";
+					manageRule(rule.type, rule.content, depth+1);
+					if(needGroup) result += " )";
+					result += "+";
+				}
+				break;
+
+				case "SEQ": {
+					let members = rule.members;
+					for(var idx in members) {
+						let child = members[idx];
+						let isChoice = child.type == "CHOICE";
+						let needGroup = isChoice;
+						let isOptional = isRuleOptional(child);
+						if(isOptional && !child.members[0].hasOwnProperty('members')) {
+							needGroup = false;
+						}
+						if(needGroup) result += " (";
+						manageRule(rule.type, child, depth+1);
+						if(needGroup) result += " )";
+						if(isOptional) result += "?";
+					}
+				}
+				break;
+
+				case "STRING": {
+					let value = rule.value;
+					//print(rule.type, value);
+					switch(value) {
+						case "\0": result += " '\\0' "; break;
+						case "\b": result += " '\\b' "; break;
+						case "\f": result += " '\\f' "; break;
+						case "\n": result += " '\\n' "; break;
+						case "\r": result += " '\\r' "; break;
+						case "\t": result += " '\\t' "; break;
+						case "\v": result += " '\\v' "; break;
+						//case "\\": result += " '\\\\' "; break;
+						case "'": result += " \"'\" "; break;
+						case "\"": result += " '\"' "; break;
+						default:
+							//value = value.replaceAll(/\\/g, "\\\\");
+							value = value.replaceAll(/\t/g, "\\t"); //order matter
+							value = value.replaceAll(/\n/g, "\\n"); //order matter
+							value = value.replaceAll(/\r/g, "\\r"); //order matter
+							if(value.indexOf("'") >= 0) result += " \"" + value + "\"";
+							else result += " '" + value + "'";
+					}
+				}
+				break;
+
+				case "SYMBOL":
+					//print(rule.type, rule.name);
+					result += " " + rule.name;
+				break;
+
+				case "IMMEDIATE_TOKEN": {
+					let needGroup = rule.content.hasOwnProperty('members');
+					if(needGroup) result += " (";
+					manageRule(rule.type, rule.content, depth+1);
+					if(needGroup) result += " )";
+				}
+				break;
+
+				case "TOKEN": {
+					let needGroup = rule.content.hasOwnProperty('members');
+					if(needGroup) result += " (";
+					manageRule(rule.type, rule.content, depth+1);
+					if(needGroup) result += " )";
+				}
+				break;
+
+				//case "IMMEDIATE_TOKEN":
+
+				default:
+					throw("Unknown rule type: " + rule.type);
+			}
+		}
+
+		let rules = json.rules;
+		for(var idx in rules) {
+			let rule = rules[idx];
+			//print(rule);
+			result += idx + " " + rule_sep + "\n" + INDENT;
+			manageRule(idx, rule, 0);
+			result += "\n\n";
+		}
+		return result;
+	}
+
+	//const  base_url = "https://github.com/";
+	const  base_url = "https://raw.githubusercontent.com/";
+	//https://raw.githubusercontent.com/tree-sitter/tree-sitter/master/docs/index.md
+	const tree_sitter_list_url = base_url + "tree-sitter/tree-sitter/master/docs/index.md";
+	//const base_url = window.location.origin + "/";
+	//const tree_sitter_list_url = base_url + "tree-sitter/docs/index.md";
+
+	const completed_state = 4;
+
+	function getGramarJson(element_id, lang_raw_url, first_request)
+	{
+		let req_json = new XMLHttpRequest();
+		req_json.onreadystatechange = function()
+		{
+			if ( this.readyState == completed_state )
+			{
+				if ( this.status == 404 )
+				{
+					if(first_request) {
+						lang_raw_url = lang_raw_url.replace("/master/", "/main/")
+						getGramarJson(element_id, lang_raw_url, false);
+					}
+					else {
+						alert("Could not find \"grammar.json\" on default path !");
+					}
+				}
+				else if(this.status == 200)
+				{
+					let myTextarea = document.getElementById( element_id );
+					let txt_json = this.responseText;
+					let ebnf = parseJsonGrammar(txt_json, lang_raw_url, "::=", "|", true);
+					myTextarea.value = ebnf;
+/*
+					var formData = new FormData();
+					formData.append("name", "compilation");
+					formData.append("text", ebnf);
+					formData.append("task", "VIEW");
+					formData.append("options", "factoring");
+					formData.append("options", "eliminaterecursion");
+					formData.append("options", "inline");
+					formData.append("options", "keep");
+					formData.append("uri", "");
+					var req_railroad = new XMLHttpRequest();
+					req_railroad.onreadystatechange = function()
+					{
+						if ( this.readyState == completed_state  && this.status == 200 )
+						{
+							let railroad = document.getElementById( "railroad" );
+							railroad.innerText = this.responseText;
+						}
+					}
+					req_railroad.open("POST", "https://bottlecaps.de/rr/ui", true);
+					//req_railroad.withCredentials = true;
+					//req_railroad.setRequestHeader('Cookie', "options=eliminaterecursion+factoring+inline+keep; width=992; spread=0; download-options=xhtml+svg+embedded; color=#FFDB4D");
+					req_railroad.send(formData);
+*/
+				}
+			}
+		}
+		req_json.open( "GET", lang_raw_url, true );
+		req_json.send( );
+	}
+
+	function ajax_submit( element_id, submit_url )
+	{
+		let request = new XMLHttpRequest();
+
+		request.onreadystatechange = function()
+		{
+			if ( this.readyState == completed_state  && this.status == 200 )
+			{
+				let mydiv = document.getElementById( element_id );
+				let txt = this.responseText;
+				let parser_list = txt.match(/### Parsers.+?### Talks on Tree-sitter/gms);
+				const lang_regexp = /\* \[([^\]]+)\]\(([^)]+)\)/g;
+
+				let match, lang_list = "<option>Select one</option>\n";
+				const https_github_len = "https://github".length;
+				const https_github_com_len = "https://github.com/".length;
+
+				//https://github.com/maxxnino/tree-sitter-zig
+				//https://raw.githubusercontent.com/maxxnino/tree-sitter-zig/main/src/grammar.json
+
+				while ((match = lang_regexp.exec(parser_list)) !== null) {
+					let lang_name = match[1];
+					let lang_url = match[2];
+					let author_lang = lang_url.slice(https_github_com_len).replace("/", "_");
+					//https://raw.githubusercontent.com/briot/tree-sitter-ada/master/src/grammar.json
+					//https://raw.githubusercontent.com/tree-sitter/tree-sitter-agda/main/src/grammar.json
+					let lang_raw_url = "https://raw.githubusercontent" + lang_url.slice(https_github_len) + "/master/src/grammar.json";
+					//lang_list += `${lang_name} -> ${lang_url} -> ${lang_raw_url} -> ${author_lang}\n`;
+					//lang_list += `<p><a href="${lang_url}">${lang_name} -> ${author_lang} -> ${lang_raw_url}</a></p>\n`;
+					lang_list += `<option value="${lang_raw_url}">${lang_name} -> ${author_lang}</option>\n`;
+					//getGramarJson("gramarList2", lang_raw_url, true);
+					//break;
+				}
+
+				mydiv.
+					innerHTML
+					//innerText
+					    = lang_list;
+			}
+		}
+
+		request.open( "GET", submit_url, true );
+		request.send( );
+	}
+
+	function loadParseGrammar(obj) {
+		let lang_raw_url = obj.options[obj.selectedIndex].value;
+		//console.log(lang_raw_url);
+		getGramarJson("gramarEBNF", lang_raw_url, true);
+	}
+
+	function loadParseGrammarUrl() {
+		let lang_raw_url = document.getElementById("raw_grammar_url");
+		if(lang_raw_url.value.length > 0) {
+			getGramarJson("gramarEBNF", lang_raw_url.value, true);
+		}
+	}
+
+	function showTreesitterGrammarList() {
+		let gramarListDiv = document.getElementById("gramarList");
+		ajax_submit("tsgrm", tree_sitter_list_url);
+		//gramarListDiv.innerHTML = "Hello World !";
+	}
+</script><meta name="darkreader" content="74f11b20f82545cfb143db0647d504f5"><style class="darkreader darkreader--override" media="screen">.vimvixen-hint {
+    background-color: #7b5300 !important;
+    border-color: #d8b013 !important;
+    color: #f3e8c8 !important;
+}
+#vimvixen-console-frame {
+    color-scheme: light !important
+}
+::placeholder {
+    opacity: 0.5 !important;
+}
+#edge-translate-panel-body,
+.MuiTypography-body1,
+.nfe-quote-text {
+    color: var(--darkreader-neutral-text) !important;
+}
+gr-main-header {
+    background-color: #0f3a48 !important;
+}
+.tou-z65h9k,
+.tou-mignzq,
+.tou-1b6i2ox,
+.tou-lnqlqk {
+    background-color: var(--darkreader-neutral-background) !important;
+}
+.tou-75mvi {
+    background-color: #032029 !important;
+}
+.tou-ta9e87,
+.tou-1w3fhi0,
+.tou-1b8t2us,
+.tou-py7lfi,
+.tou-1lpmd9d,
+.tou-1frrtv8,
+.tou-17ezmgn {
+    background-color: #0a0a0a !important;
+}
+.tou-uknfeu {
+    background-color: #231603 !important;
+}
+.tou-6i3zyv {
+    background-color: #19576c !important;
+}
+div.mermaid-viewer-control-panel .btn {
+  fill: var(--darkreader-neutral-text);
+  background-color: var(--darkreader-neutral-background);
+}
+svg g rect.er {
+  fill: var(--darkreader-neutral-background) !important;
+}
+svg g rect.er.entityBox {
+  fill: var(--darkreader-neutral-background) !important;
+}
+svg g rect.er.attributeBoxOdd {
+  fill: var(--darkreader-neutral-background) !important;
+}
+svg g rect.er.attributeBoxEven {
+  fill-opacity: 0.8 !important;
+  fill: var(--darkreader-selection-background);
+}
+svg rect.er.relationshipLabelBox {
+  fill: var(--darkreader-neutral-background) !important;
+}
+svg g g.nodes rect, svg g g.nodes polygon {
+  fill: var(--darkreader-neutral-background) !important;
+}
+svg g rect.task {
+  fill: var(--darkreader-selection-background) !important;
+}
+svg line.messageLine0, svg line.messageLine1 {
+  stroke: var(--darkreader-neutral-text) !important;
+}
+div.mermaid .actor {
+  fill: var(--darkreader-neutral-background) !important;
+}
+.google-material-icons {
+    font-family: 'Google Material Icons' !important;
+}
+.google-symbols {
+    font-family: 'Google Symbols' !important;
+}
+.material-icons-extended {
+    font-family: 'Material Icons Extended' !important;
+}
+mitid-authenticators-code-app > .code-app-container {
+    padding-top: 1rem;
+    background-color: white !important;
+}
+iframe#unpaywall[src$="unpaywall.html"] {
+    color-scheme: light !important;
+}
+.ms-Icon {
+    font-family: 'FabricMDL2Icons' !important;
+}
+embed[type="application/pdf"] { filter: invert(100%) contrast(90%); }</style>
+<style type="text/css">
+#gramarEBNF {width: 100%;height:65%; margin-top: 1em; padding: 1em;}
+</style><style class="darkreader darkreader--sync" media="screen"></style>
+<script src="tree-sitter-ebnf_files/page-script.js" id="bw-fido2-page-script"></script></head>
+<body>
+<h2><a href="https://tree-sitter.github.io/tree-sitter/" target="_blank">Tree-sitter</a> converter to <a href="https://www.bottlecaps.de/rr/ui" target="_blank">EBNF for railroad diagram</a></h2>
+<div id="gramarExamples">
+<p>Examples <select id="tsgrm" onchange="loadParseGrammar(this);"><option selected="selected">Select one</option>
+<option value="https://raw.githubusercontent.com/briot/tree-sitter-ada/master/src/grammar.json">Ada -&gt; briot_tree-sitter-ada</option>
+<option value="https://raw.githubusercontent.com/tree-sitter/tree-sitter-agda/master/src/grammar.json">Agda -&gt; tree-sitter_tree-sitter-agda</option>
+<option value="https://raw.githubusercontent.com/aheber/tree-sitter-sfapex/master/src/grammar.json">Apex -&gt; aheber_tree-sitter-sfapex</option>
+<option value="https://raw.githubusercontent.com/jsuarez-chipiron/tree-sitter-apex/master/src/grammar.json">ApexCode -&gt; jsuarez-chipiron_tree-sitter-apex</option>
+<option value="https://raw.githubusercontent.com/3p3r/tree-sitter-eventrule/master/src/grammar.json">AWS Event Rule -&gt; 3p3r_tree-sitter-eventrule</option>
+<option value="https://raw.githubusercontent.com/tree-sitter/tree-sitter-bash/master/src/grammar.json">Bash -&gt; tree-sitter_tree-sitter-bash</option>
+<option value="https://raw.githubusercontent.com/zwpaper/tree-sitter-beancount/master/src/grammar.json">Beancount -&gt; zwpaper_tree-sitter-beancount</option>
+<option value="https://raw.githubusercontent.com/amaanq/tree-sitter-capnp/master/src/grammar.json">Cap'n Proto -&gt; amaanq_tree-sitter-capnp</option>
+<option value="https://raw.githubusercontent.com/tree-sitter/tree-sitter-c/master/src/grammar.json">C -&gt; tree-sitter_tree-sitter-c</option>
+<option value="https://raw.githubusercontent.com/tree-sitter/tree-sitter-cpp/master/src/grammar.json">C++ -&gt; tree-sitter_tree-sitter-cpp</option>
+<option value="https://raw.githubusercontent.com/tree-sitter/tree-sitter-c-sharp/master/src/grammar.json">C# -&gt; tree-sitter_tree-sitter-c-sharp</option>
+<option value="https://raw.githubusercontent.com/bufbuild/tree-sitter-cel/master/src/grammar.json">CEL -&gt; bufbuild_tree-sitter-cel</option>
+<option value="https://raw.githubusercontent.com/sogaiu/tree-sitter-clojure/master/src/grammar.json">Clojure -&gt; sogaiu_tree-sitter-clojure</option>
+<option value="https://raw.githubusercontent.com/uyha/tree-sitter-cmake/master/src/grammar.json">CMake -&gt; uyha_tree-sitter-cmake</option>
+<option value="https://raw.githubusercontent.com/yutaro-sakamoto/tree-sitter-cobol/master/src/grammar.json">COBOL -&gt; yutaro-sakamoto_tree-sitter-cobol</option>
+<option value="https://raw.githubusercontent.com/theHamsta/tree-sitter-commonlisp/master/src/grammar.json">Common Lisp -&gt; theHamsta_tree-sitter-commonlisp</option>
+<option value="https://raw.githubusercontent.com/tree-sitter/tree-sitter-css/master/src/grammar.json">CSS -&gt; tree-sitter_tree-sitter-css</option>
+<option value="https://raw.githubusercontent.com/theHamsta/tree-sitter-cuda/master/src/grammar.json">CUDA -&gt; theHamsta_tree-sitter-cuda</option>
+<option value="https://raw.githubusercontent.com/UserNobody14/tree-sitter-dart/master/src/grammar.json">Dart -&gt; UserNobody14_tree-sitter-dart</option>
+<option value="https://raw.githubusercontent.com/gdamore/tree-sitter-d/master/src/grammar.json">D -&gt; gdamore_tree-sitter-d</option>
+<option value="https://raw.githubusercontent.com/camdencheek/tree-sitter-dockerfile/master/src/grammar.json">Dockerfile -&gt; camdencheek_tree-sitter-dockerfile</option>
+<option value="https://raw.githubusercontent.com/rydesun/tree-sitter-dot/master/src/grammar.json">DOT -&gt; rydesun_tree-sitter-dot</option>
+<option value="https://raw.githubusercontent.com/elixir-lang/tree-sitter-elixir/master/src/grammar.json">Elixir -&gt; elixir-lang_tree-sitter-elixir</option>
+<option value="https://raw.githubusercontent.com/elm-tooling/tree-sitter-elm/master/src/grammar.json">Elm -&gt; elm-tooling_tree-sitter-elm</option>
+<option value="https://raw.githubusercontent.com/Wilfred/tree-sitter-elisp/master/src/grammar.json">Emacs Lisp -&gt; Wilfred_tree-sitter-elisp</option>
+<option value="https://raw.githubusercontent.com/eno-lang/tree-sitter-eno/master/src/grammar.json">Eno -&gt; eno-lang_tree-sitter-eno</option>
+<option value="https://raw.githubusercontent.com/tree-sitter/tree-sitter-embedded-template/master/src/grammar.json">ERB / EJS -&gt; tree-sitter_tree-sitter-embedded-template</option>
+<option value="https://raw.githubusercontent.com/WhatsApp/tree-sitter-erlang//master/src/grammar.json">Erlang -&gt; WhatsApp_tree-sitter-erlang/</option>
+<option value="https://raw.githubusercontent.com/travonted/tree-sitter-fennel/master/src/grammar.json">Fennel -&gt; travonted_tree-sitter-fennel</option>
+<option value="https://raw.githubusercontent.com/ram02z/tree-sitter-fish/master/src/grammar.json">Fish -&gt; ram02z_tree-sitter-fish</option>
+<option value="https://raw.githubusercontent.com/siraben/tree-sitter-formula/master/src/grammar.json">Formula -&gt; siraben_tree-sitter-formula</option>
+<option value="https://raw.githubusercontent.com/stadelmanma/tree-sitter-fortran/master/src/grammar.json">Fortran -&gt; stadelmanma_tree-sitter-fortran</option>
+<option value="https://raw.githubusercontent.com/ObserverOfTime/tree-sitter-gitattributes/master/src/grammar.json">gitattributes -&gt; ObserverOfTime_tree-sitter-gitattributes</option>
+<option value="https://raw.githubusercontent.com/shunsambongi/tree-sitter-gitignore/master/src/grammar.json">gitignore -&gt; shunsambongi_tree-sitter-gitignore</option>
+<option value="https://raw.githubusercontent.com/gleam-lang/tree-sitter-gleam/master/src/grammar.json">Gleam -&gt; gleam-lang_tree-sitter-gleam</option>
+<option value="https://raw.githubusercontent.com/theHamsta/tree-sitter-glsl/master/src/grammar.json">GLSL (OpenGL Shading Language) -&gt; theHamsta_tree-sitter-glsl</option>
+<option value="https://raw.githubusercontent.com/tree-sitter/tree-sitter-go/master/src/grammar.json">Go -&gt; tree-sitter_tree-sitter-go</option>
+<option value="https://raw.githubusercontent.com/camdencheek/tree-sitter-go-mod/master/src/grammar.json">Go mod -&gt; camdencheek_tree-sitter-go-mod</option>
+<option value="https://raw.githubusercontent.com/omertuc/tree-sitter-go-work/master/src/grammar.json">Go work -&gt; omertuc_tree-sitter-go-work</option>
+<option value="https://raw.githubusercontent.com/bkegley/tree-sitter-graphql/master/src/grammar.json">GraphQL -&gt; bkegley_tree-sitter-graphql</option>
+<option value="https://raw.githubusercontent.com/slackhq/tree-sitter-hack/master/src/grammar.json">Hack -&gt; slackhq_tree-sitter-hack</option>
+<option value="https://raw.githubusercontent.com/tree-sitter/tree-sitter-haskell/master/src/grammar.json">Haskell -&gt; tree-sitter_tree-sitter-haskell</option>
+<option value="https://raw.githubusercontent.com/MichaHoffmann/tree-sitter-hcl/master/src/grammar.json">HCL -&gt; MichaHoffmann_tree-sitter-hcl</option>
+<option value="https://raw.githubusercontent.com/tree-sitter/tree-sitter-html/master/src/grammar.json">HTML -&gt; tree-sitter_tree-sitter-html</option>
+<option value="https://raw.githubusercontent.com/fab4100/tree-sitter-ispc/master/src/grammar.json">ISPC -&gt; fab4100_tree-sitter-ispc</option>
+<option value="https://raw.githubusercontent.com/tree-sitter/tree-sitter-java/master/src/grammar.json">Java -&gt; tree-sitter_tree-sitter-java</option>
+<option value="https://raw.githubusercontent.com/tree-sitter/tree-sitter-javascript/master/src/grammar.json">JavaScript -&gt; tree-sitter_tree-sitter-javascript</option>
+<option value="https://raw.githubusercontent.com/flurie/tree-sitter-jq/master/src/grammar.json">jq -&gt; flurie_tree-sitter-jq</option>
+<option value="https://raw.githubusercontent.com/tree-sitter/tree-sitter-json/master/src/grammar.json">JSON -&gt; tree-sitter_tree-sitter-json</option>
+<option value="https://raw.githubusercontent.com/Joakker/tree-sitter-json5/master/src/grammar.json">JSON5 -&gt; Joakker_tree-sitter-json5</option>
+<option value="https://raw.githubusercontent.com/tree-sitter/tree-sitter-julia/master/src/grammar.json">Julia -&gt; tree-sitter_tree-sitter-julia</option>
+<option value="https://raw.githubusercontent.com/IndianBoy42/tree-sitter-just/master/src/grammar.json">Just -&gt; IndianBoy42_tree-sitter-just</option>
+<option value="https://raw.githubusercontent.com/fwcd/tree-sitter-kotlin/master/src/grammar.json">Kotlin -&gt; fwcd_tree-sitter-kotlin</option>
+<option value="https://raw.githubusercontent.com/traxys/tree-sitter-lalrpop/master/src/grammar.json">LALRPOP -&gt; traxys_tree-sitter-lalrpop</option>
+<option value="https://raw.githubusercontent.com/latex-lsp/tree-sitter-latex/master/src/grammar.json">LaTeX -&gt; latex-lsp_tree-sitter-latex</option>
+<option value="https://raw.githubusercontent.com/Julian/tree-sitter-lean/master/src/grammar.json">Lean -&gt; Julian_tree-sitter-lean</option>
+<option value="https://raw.githubusercontent.com/benwilliamgraham/tree-sitter-llvm/master/src/grammar.json">LLVM -&gt; benwilliamgraham_tree-sitter-llvm</option>
+<option value="https://raw.githubusercontent.com/Flakebi/tree-sitter-llvm-mir/master/src/grammar.json">LLVM MachineIR -&gt; Flakebi_tree-sitter-llvm-mir</option>
+<option value="https://raw.githubusercontent.com/artagnon/tree-sitter-mlir/master/src/grammar.json">LLVM MLIR -&gt; artagnon_tree-sitter-mlir</option>
+<option value="https://raw.githubusercontent.com/Flakebi/tree-sitter-tablegen/master/src/grammar.json">LLVM TableGen -&gt; Flakebi_tree-sitter-tablegen</option>
+<option value="https://raw.githubusercontent.com/MunifTanjim/tree-sitter-lua/master/src/grammar.json">Lua -&gt; MunifTanjim_tree-sitter-lua</option>
+<option value="https://raw.githubusercontent.com/krn-robin/tree-sitter-magik/master/src/grammar.json">Magik -&gt; krn-robin_tree-sitter-magik</option>
+<option value="https://raw.githubusercontent.com/alemuller/tree-sitter-make/master/src/grammar.json">Make -&gt; alemuller_tree-sitter-make</option>
+<option value="https://raw.githubusercontent.com/ikatyang/tree-sitter-markdown/master/src/grammar.json">Markdown -&gt; ikatyang_tree-sitter-markdown</option>
+<option value="https://raw.githubusercontent.com/MDeiml/tree-sitter-markdown/master/src/grammar.json">Markdown -&gt; MDeiml_tree-sitter-markdown</option>
+<option value="https://raw.githubusercontent.com/Decodetalkers/tree-sitter-meson/master/src/grammar.json">Meson -&gt; Decodetalkers_tree-sitter-meson</option>
+<option value="https://raw.githubusercontent.com/staysail/tree-sitter-meson/master/src/grammar.json">Meson -&gt; staysail_tree-sitter-meson</option>
+<option value="https://raw.githubusercontent.com/grahambates/tree-sitter-m68k/master/src/grammar.json">Motorola 68000 assembly -&gt; grahambates_tree-sitter-m68k</option>
+<option value="https://raw.githubusercontent.com/alaviss/tree-sitter-nim/master/src/grammar.json">Nim -&gt; alaviss_tree-sitter-nim</option>
+<option value="https://raw.githubusercontent.com/cstrahan/tree-sitter-nix/master/src/grammar.json">Nix -&gt; cstrahan_tree-sitter-nix</option>
+<option value="https://raw.githubusercontent.com/hhamud/tree-sitter-noir/master/src/grammar.json">Noir -&gt; hhamud_tree-sitter-noir</option>
+<option value="https://raw.githubusercontent.com/jiyee/tree-sitter-objc/master/src/grammar.json">Objective-C -&gt; jiyee_tree-sitter-objc</option>
+<option value="https://raw.githubusercontent.com/tree-sitter/tree-sitter-ocaml/master/src/grammar.json">OCaml -&gt; tree-sitter_tree-sitter-ocaml</option>
+<option value="https://raw.githubusercontent.com/amaanq/tree-sitter-odin/master/src/grammar.json">Odin -&gt; amaanq_tree-sitter-odin</option>
+<option value="https://raw.githubusercontent.com/milisims/tree-sitter-org/master/src/grammar.json">Org -&gt; milisims_tree-sitter-org</option>
+<option value="https://raw.githubusercontent.com/ace-design/tree-sitter-p4/master/src/grammar.json">P4 -&gt; ace-design_tree-sitter-p4</option>
+<option value="https://raw.githubusercontent.com/Isopod/tree-sitter-pascal/master/src/grammar.json">Pascal -&gt; Isopod_tree-sitter-pascal</option>
+<option value="https://raw.githubusercontent.com/ganezdragon/tree-sitter-perl/master/src/grammar.json">Perl -&gt; ganezdragon_tree-sitter-perl</option>
+<option value="https://raw.githubusercontent.com/tree-sitter-perl/tree-sitter-perl/master/src/grammar.json">Perl -&gt; tree-sitter-perl_tree-sitter-perl</option>
+<option value="https://raw.githubusercontent.com/tree-sitter-perl/tree-sitter-pod/master/src/grammar.json">Perl POD -&gt; tree-sitter-perl_tree-sitter-pod</option>
+<option value="https://raw.githubusercontent.com/tree-sitter/tree-sitter-php/master/src/grammar.json">PHP -&gt; tree-sitter_tree-sitter-php</option>
+<option value="https://raw.githubusercontent.com/rolandwalker/tree-sitter-pgn/master/src/grammar.json">Portable Game Notation -&gt; rolandwalker_tree-sitter-pgn</option>
+<option value="https://raw.githubusercontent.com/airbus-cert/tree-sitter-powershell/master/src/grammar.json">PowerShell -&gt; airbus-cert_tree-sitter-powershell</option>
+<option value="https://raw.githubusercontent.com/mitchellh/tree-sitter-proto/master/src/grammar.json">Protocol Buffers -&gt; mitchellh_tree-sitter-proto</option>
+<option value="https://raw.githubusercontent.com/tree-sitter/tree-sitter-python/master/src/grammar.json">Python -&gt; tree-sitter_tree-sitter-python</option>
+<option value="https://raw.githubusercontent.com/yuja/tree-sitter-qmljs/master/src/grammar.json">QML -&gt; yuja_tree-sitter-qmljs</option>
+<option value="https://raw.githubusercontent.com/vkazanov/tree-sitter-quakec/master/src/grammar.json">QuakeC -&gt; vkazanov_tree-sitter-quakec</option>
+<option value="https://raw.githubusercontent.com/6cdh/tree-sitter-racket/master/src/grammar.json">Racket -&gt; 6cdh_tree-sitter-racket</option>
+<option value="https://raw.githubusercontent.com/Fymyte/tree-sitter-rasi/master/src/grammar.json">Rasi -&gt; Fymyte_tree-sitter-rasi</option>
+<option value="https://raw.githubusercontent.com/alemuller/tree-sitter-re2c/master/src/grammar.json">re2c -&gt; alemuller_tree-sitter-re2c</option>
+<option value="https://raw.githubusercontent.com/tree-sitter/tree-sitter-regex/master/src/grammar.json">Regex -&gt; tree-sitter_tree-sitter-regex</option>
+<option value="https://raw.githubusercontent.com/FallenAngel97/tree-sitter-rego/master/src/grammar.json">Rego -&gt; FallenAngel97_tree-sitter-rego</option>
+<option value="https://raw.githubusercontent.com/stsewd/tree-sitter-rst/master/src/grammar.json">reStructuredText -&gt; stsewd_tree-sitter-rst</option>
+<option value="https://raw.githubusercontent.com/r-lib/tree-sitter-r/master/src/grammar.json">R -&gt; r-lib_tree-sitter-r</option>
+<option value="https://raw.githubusercontent.com/Hubro/tree-sitter-robot/master/src/grammar.json">Robot -&gt; Hubro_tree-sitter-robot</option>
+<option value="https://raw.githubusercontent.com/tree-sitter/tree-sitter-ruby/master/src/grammar.json">Ruby -&gt; tree-sitter_tree-sitter-ruby</option>
+<option value="https://raw.githubusercontent.com/tree-sitter/tree-sitter-rust/master/src/grammar.json">Rust -&gt; tree-sitter_tree-sitter-rust</option>
+<option value="https://raw.githubusercontent.com/tree-sitter/tree-sitter-scala/master/src/grammar.json">Scala -&gt; tree-sitter_tree-sitter-scala</option>
+<option value="https://raw.githubusercontent.com/6cdh/tree-sitter-scheme/master/src/grammar.json">Scheme -&gt; 6cdh_tree-sitter-scheme</option>
+<option value="https://raw.githubusercontent.com/serenadeai/tree-sitter-scss/master/src/grammar.json">SCSS -&gt; serenadeai_tree-sitter-scss</option>
+<option value="https://raw.githubusercontent.com/AbstractMachinesLab/tree-sitter-sexp/master/src/grammar.json">S-expressions -&gt; AbstractMachinesLab_tree-sitter-sexp</option>
+<option value="https://raw.githubusercontent.com/amaanq/tree-sitter-smali/master/src/grammar.json">Smali -&gt; amaanq_tree-sitter-smali</option>
+<option value="https://raw.githubusercontent.ht/~yotam/tree-sitter-smali/master/src/grammar.json">Smali -&gt; yotam_tree-sitter-smali</option>
+<option value="https://raw.githubusercontent.com/nilshelmig/tree-sitter-sourcepawn/master/src/grammar.json">SourcePawn -&gt; nilshelmig_tree-sitter-sourcepawn</option>
+<option value="https://raw.githubusercontent.com/BonaBeavis/tree-sitter-sparql/master/src/grammar.json">SPARQL -&gt; BonaBeavis_tree-sitter-sparql</option>
+<option value="https://raw.githubusercontent.com/takegue/tree-sitter-sql-bigquery/master/src/grammar.json">SQL - BigQuery -&gt; takegue_tree-sitter-sql-bigquery</option>
+<option value="https://raw.githubusercontent.com/DerekStride/tree-sitter-sql/master/src/grammar.json">SQL - General -&gt; DerekStride_tree-sitter-sql</option>
+<option value="https://raw.githubusercontent.com/m-novikov/tree-sitter-sql/master/src/grammar.json">SQL - PostgreSQL -&gt; m-novikov_tree-sitter-sql</option>
+<option value="https://raw.githubusercontent.com/dhcmrlchtdj/tree-sitter-sqlite/master/src/grammar.json">SQL - SQLite -&gt; dhcmrlchtdj_tree-sitter-sqlite</option>
+<option value="https://raw.githubusercontent.com/metio/tree-sitter-ssh-client-config/master/src/grammar.json">SSH -&gt; metio_tree-sitter-ssh-client-config</option>
+<option value="https://raw.githubusercontent.com/madskjeldgaard/tree-sitter-supercollider/master/src/grammar.json">Supercollider -&gt; madskjeldgaard_tree-sitter-supercollider</option>
+<option value="https://raw.githubusercontent.com/Himujjal/tree-sitter-svelte/master/src/grammar.json">Svelte -&gt; Himujjal_tree-sitter-svelte</option>
+<option value="https://raw.githubusercontent.com/alex-pinkus/tree-sitter-swift/master/src/grammar.json">Swift -&gt; alex-pinkus_tree-sitter-swift</option>
+<option value="https://raw.githubusercontent.com/SystemRDL/tree-sitter-systemrdl/master/src/grammar.json">SystemRDL -&gt; SystemRDL_tree-sitter-systemrdl</option>
+<option value="https://raw.githubusercontent.com/tact-lang/tree-sitter-tact/master/src/grammar.json">Tact -&gt; tact-lang_tree-sitter-tact</option>
+<option value="https://raw.githubusercontent.com/duskmoon314/tree-sitter-thrift/master/src/grammar.json">Thrift -&gt; duskmoon314_tree-sitter-thrift</option>
+<option value="https://raw.githubusercontent.com/stsewd/tree-sitter-comment/master/src/grammar.json">"TODO:" comments -&gt; stsewd_tree-sitter-comment</option>
+<option value="https://raw.githubusercontent.com/ikatyang/tree-sitter-toml/master/src/grammar.json">TOML -&gt; ikatyang_tree-sitter-toml</option>
+<option value="https://raw.githubusercontent.com/nvim-treesitter/tree-sitter-query/master/src/grammar.json">Tree-sitter Query -&gt; nvim-treesitter_tree-sitter-query</option>
+<option value="https://raw.githubusercontent.com/BonaBeavis/tree-sitter-turtle/master/src/grammar.json">Turtle -&gt; BonaBeavis_tree-sitter-turtle</option>
+<option value="https://raw.githubusercontent.com/kaermorchen/tree-sitter-twig/master/src/grammar.json">Twig -&gt; kaermorchen_tree-sitter-twig</option>
+<option value="https://raw.githubusercontent.com/gbprod/tree-sitter-twig/master/src/grammar.json">Twig -&gt; gbprod_tree-sitter-twig</option>
+<option value="https://raw.githubusercontent.com/tree-sitter/tree-sitter-typescript/master/src/grammar.json">TypeScript -&gt; tree-sitter_tree-sitter-typescript</option>
+<option value="https://raw.githubusercontent.com/Philipp-M/tree-sitter-ungrammar/master/src/grammar.json">Ungrammar -&gt; Philipp-M_tree-sitter-ungrammar</option>
+<option value="https://raw.githubusercontent.com/ColinKennedy/tree-sitter-usd/master/src/grammar.json">USD -&gt; ColinKennedy_tree-sitter-usd</option>
+<option value="https://raw.githubusercontent.com/tree-sitter/tree-sitter-verilog/master/src/grammar.json">Verilog -&gt; tree-sitter_tree-sitter-verilog</option>
+<option value="https://raw.githubusercontent.com/alemuller/tree-sitter-vhdl/master/src/grammar.json">VHDL -&gt; alemuller_tree-sitter-vhdl</option>
+<option value="https://raw.githubusercontent.com/ikatyang/tree-sitter-vue/master/src/grammar.json">Vue -&gt; ikatyang_tree-sitter-vue</option>
+<option value="https://raw.githubusercontent.com/wasm-lsp/tree-sitter-wasm/master/src/grammar.json">Wasm -&gt; wasm-lsp_tree-sitter-wasm</option>
+<option value="https://raw.githubusercontent.com/jdidion/tree-sitter-wdl/master/src/grammar.json">WDL -&gt; jdidion_tree-sitter-wdl</option>
+<option value="https://raw.githubusercontent.com/mehmetoguzderin/tree-sitter-wgsl/master/src/grammar.json">WGSL (WebGPU Shading Language) -&gt; mehmetoguzderin_tree-sitter-wgsl</option>
+<option value="https://raw.githubusercontent.com/ikatyang/tree-sitter-yaml/master/src/grammar.json">YAML -&gt; ikatyang_tree-sitter-yaml</option>
+<option value="https://raw.githubusercontent.com/Hubro/tree-sitter-yang/master/src/grammar.json">YANG -&gt; Hubro_tree-sitter-yang</option>
+<option value="https://raw.githubusercontent.com/Philipp-M/tree-sitter-yuck/master/src/grammar.json">Yuck -&gt; Philipp-M_tree-sitter-yuck</option>
+<option value="https://raw.githubusercontent.com/maxxnino/tree-sitter-zig/master/src/grammar.json">Zig -&gt; maxxnino_tree-sitter-zig</option>
+</select></p>
+<p>Or type the raw url to 'grammar.json' here <input id="raw_grammar_url" placeholder="https://raw.githubusercontent.com/tree-sitter/tree-sitter-javascript/master/src/grammar.json" value="http://localhost:8888/grammar.json"> <button onclick="loadParseGrammarUrl();">Go</button></p>
+<p>
+Copy and paste the <b>EBNF</b>  shown bellow on <a href="https://www.bottlecaps.de/rr/ui">https://www.bottlecaps.de/rr/ui</a> on the tab <b>'Edit Grammar'</b> the click on the tab <b>'View Diagram'</b> to see/download a navigable railroad diagram.
+</p>
+</div>
+<form method="POST" action="https://bottlecaps.de/rr/ui" enctype="multipart/form-data" target="_blank">
+<input type="hidden" name="name" value="compilation">
+<input type="hidden" name="task" value="VIEW">
+<input type="hidden" name="options" value="factoring">
+<input type="hidden" name="options" value="eliminaterecursion">
+<input type="hidden" name="options" value="inline">
+<input type="hidden" name="options" value="keep">
+<input type="hidden" name="uri" value="">
+<p>
+Or press <input type="submit" value="Show Railroad Diagram"> to automatically send it to https://www.bottlecaps.de/rr/ui .
+</p>
+<textarea id="gramarEBNF" name="text">rfdsfsd
+</textarea>
+</form>
+<p>Noticed that from the same author (<a href="https://github.com/GuntherRademacher" target="_blank">Gunther Rademacher</a>) of the railroad diagram generator there is:</p>
+<p><a href="https://www.bottlecaps.de/convert/" target="_blank">Convert2EBNF</a> that convert to EBNF from ABNF, ANTLR 3, ANTLR 4, Bison, GOLD, Instaparse, Invisible XML, JavaCC, Jison, PEG.js, Xtext .</p>
+<p><a href="https://bottlecaps.de/rex/" target="_blank">REx Parser Generator</a>
+ that generates parsers from EBNF in the following languages: C++, C#, 
+Haxe, Java, JavaScript, TypeScript, Scala, XQuery, XSLT, XML .</p>
+<script type="text/javascript">showTreesitterGrammarList()</script>
+
+</body></html>
