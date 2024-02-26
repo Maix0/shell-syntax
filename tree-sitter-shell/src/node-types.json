@@ -8,11 +8,26 @@
       "required": true,
       "types": [
         {
-          "type": "linebreak",
+          "type": "pipeline",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "assignment",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "WORD",
           "named": true
         },
         {
-          "type": "pipeline",
+          "type": "name",
           "named": true
         }
       ]
@@ -52,10 +67,6 @@
         {
           "type": "case_list_ns",
           "named": true
-        },
-        {
-          "type": "linebreak",
-          "named": true
         }
       ]
     }
@@ -70,10 +81,6 @@
       "types": [
         {
           "type": "compound_list",
-          "named": true
-        },
-        {
-          "type": "linebreak",
           "named": true
         },
         {
@@ -93,10 +100,6 @@
       "types": [
         {
           "type": "compound_list",
-          "named": true
-        },
-        {
-          "type": "linebreak",
           "named": true
         },
         {
@@ -164,7 +167,7 @@
       "required": true,
       "types": [
         {
-          "type": "WORD",
+          "type": "assignment",
           "named": true
         },
         {
@@ -183,7 +186,7 @@
       "required": true,
       "types": [
         {
-          "type": "WORD",
+          "type": "assignment",
           "named": true
         }
       ]
@@ -283,10 +286,6 @@
       "required": true,
       "types": [
         {
-          "type": "linebreak",
-          "named": true
-        },
-        {
           "type": "separator",
           "named": true
         },
@@ -359,7 +358,7 @@
           "named": true
         },
         {
-          "type": "linebreak",
+          "type": "name",
           "named": true
         },
         {
@@ -402,10 +401,6 @@
         },
         {
           "type": "function_body",
-          "named": true
-        },
-        {
-          "type": "linebreak",
           "named": true
         }
       ]
@@ -476,34 +471,15 @@
     "named": true,
     "fields": {},
     "children": {
-      "multiple": true,
+      "multiple": false,
       "required": true,
       "types": [
-        {
-          "type": "IO_NUMBER",
-          "named": true
-        },
         {
           "type": "io_file",
           "named": true
         },
         {
           "type": "io_here",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
-    "type": "linebreak",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": false,
-      "required": true,
-      "types": [
-        {
-          "type": "newline_list",
           "named": true
         }
       ]
@@ -527,11 +503,6 @@
         }
       ]
     }
-  },
-  {
-    "type": "newline_list",
-    "named": true,
-    "fields": {}
   },
   {
     "type": "pattern",
@@ -559,10 +530,6 @@
         {
           "type": "command",
           "named": true
-        },
-        {
-          "type": "linebreak",
-          "named": true
         }
       ]
     }
@@ -577,29 +544,6 @@
       "types": [
         {
           "type": "pipe_sequence",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
-    "type": "program",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": true,
-      "required": true,
-      "types": [
-        {
-          "type": "complete_command",
-          "named": true
-        },
-        {
-          "type": "linebreak",
-          "named": true
-        },
-        {
-          "type": "newline_list",
           "named": true
         }
       ]
@@ -625,17 +569,9 @@
     "named": true,
     "fields": {},
     "children": {
-      "multiple": true,
-      "required": true,
+      "multiple": false,
+      "required": false,
       "types": [
-        {
-          "type": "linebreak",
-          "named": true
-        },
-        {
-          "type": "newline_list",
-          "named": true
-        },
         {
           "type": "separator_op",
           "named": true
@@ -651,21 +587,7 @@
   {
     "type": "sequential_sep",
     "named": true,
-    "fields": {},
-    "children": {
-      "multiple": false,
-      "required": true,
-      "types": [
-        {
-          "type": "linebreak",
-          "named": true
-        },
-        {
-          "type": "newline_list",
-          "named": true
-        }
-      ]
-    }
+    "fields": {}
   },
   {
     "type": "simple_command",
@@ -695,11 +617,11 @@
     "named": true,
     "fields": {},
     "children": {
-      "multiple": false,
-      "required": true,
+      "multiple": true,
+      "required": false,
       "types": [
         {
-          "type": "program",
+          "type": "complete_command",
           "named": true
         }
       ]
@@ -830,6 +752,10 @@
     "named": false
   },
   {
+    "type": "=",
+    "named": false
+  },
+  {
     "type": ">",
     "named": false
   },
@@ -844,10 +770,6 @@
   {
     "type": ">|",
     "named": false
-  },
-  {
-    "type": "IO_NUMBER",
-    "named": true
   },
   {
     "type": "WORD",
@@ -892,6 +814,10 @@
   {
     "type": "in",
     "named": false
+  },
+  {
+    "type": "name",
+    "named": true
   },
   {
     "type": "then",
