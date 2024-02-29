@@ -1,0 +1,378 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- converted on Thu Feb 29, 2024, 19:50 (UTC+01) by w3c-to-w3c v0.67 which is Copyright (c)
+2011-2024 by Gunther Rademacher <grd@gmx.net> -->
+<g:grammar xmlns:g="http://www.w3.org/2001/03/XPath/grammar">
+	<g:production name="source_file">
+		<g:optional>
+			<g:ref name="complete_command" />
+			<g:zeroOrMore>
+				<g:oneOrMore>
+					<g:string>\n</g:string>
+				</g:oneOrMore>
+				<g:ref name="complete_command" />
+			</g:zeroOrMore>
+		</g:optional>
+		<g:zeroOrMore>
+			<g:string>\n</g:string>
+		</g:zeroOrMore>
+	</g:production>
+	<g:production name="complete_command">
+		<g:ref name="list" />
+		<g:optional>
+			<g:ref name="separator_op" />
+		</g:optional>
+	</g:production>
+	<g:production name="list">
+		<g:ref name="and_or" />
+		<g:zeroOrMore>
+			<g:ref name="separator_op" />
+			<g:ref name="and_or" />
+		</g:zeroOrMore>
+	</g:production>
+	<g:production name="and_or">
+		<g:ref name="pipeline" />
+		<g:zeroOrMore>
+			<g:choice>
+				<g:string>&amp;&amp;</g:string>
+				<g:string>||</g:string>
+			</g:choice>
+			<g:zeroOrMore>
+				<g:string>\n</g:string>
+			</g:zeroOrMore>
+			<g:ref name="pipeline" />
+		</g:zeroOrMore>
+	</g:production>
+	<g:production name="pipeline">
+		<g:optional>
+			<g:string>!</g:string>
+		</g:optional>
+		<g:ref name="pipe_sequence" />
+	</g:production>
+	<g:production name="pipe_sequence">
+		<g:ref name="command" />
+		<g:zeroOrMore>
+			<g:string>|</g:string>
+			<g:zeroOrMore>
+				<g:string>\n</g:string>
+			</g:zeroOrMore>
+			<g:ref name="command" />
+		</g:zeroOrMore>
+	</g:production>
+	<g:production name="command">
+		<g:choice>
+			<g:ref name="simple_command" />
+			<g:sequence>
+				<g:ref name="compound_command" />
+				<g:optional>
+					<g:ref name="redirect_list" />
+				</g:optional>
+			</g:sequence>
+			<g:ref name="function_definition" />
+		</g:choice>
+	</g:production>
+	<g:production name="compound_command">
+		<g:choice>
+			<g:ref name="brace_group" />
+			<g:ref name="subshell" />
+			<g:ref name="for_clause" />
+			<g:ref name="case_clause" />
+			<g:ref name="if_clause" />
+			<g:ref name="while_clause" />
+			<g:ref name="until_clause" />
+		</g:choice>
+	</g:production>
+	<g:production name="subshell">
+		<g:string>(</g:string>
+		<g:ref name="compound_list" />
+		<g:string>)</g:string>
+	</g:production>
+	<g:production name="compound_list">
+		<g:zeroOrMore>
+			<g:string>\n</g:string>
+		</g:zeroOrMore>
+		<g:ref name="term" />
+		<g:optional>
+			<g:ref name="separator" />
+		</g:optional>
+	</g:production>
+	<g:production name="term">
+		<g:ref name="and_or" />
+		<g:zeroOrMore>
+			<g:ref name="separator" />
+			<g:ref name="and_or" />
+		</g:zeroOrMore>
+	</g:production>
+	<g:production name="for_clause">
+		<g:string>for</g:string>
+		<g:ref name="name" />
+		<g:optional>
+			<g:optional>
+				<g:zeroOrMore>
+					<g:string>\n</g:string>
+				</g:zeroOrMore>
+				<g:string>in</g:string>
+				<g:zeroOrMore>
+					<g:ref name="WORD" />
+				</g:zeroOrMore>
+			</g:optional>
+			<g:ref name="sequential_sep" />
+		</g:optional>
+		<g:ref name="do_group" />
+	</g:production>
+	<g:production name="case_list_ns">
+		<g:optional>
+			<g:ref name="case_list" />
+		</g:optional>
+		<g:ref name="case_item_ns" />
+	</g:production>
+	<g:production name="case_list">
+		<g:oneOrMore>
+			<g:ref name="case_item" />
+		</g:oneOrMore>
+	</g:production>
+	<g:production name="case_item_ns">
+		<g:optional>
+			<g:string>(</g:string>
+		</g:optional>
+		<g:ref name="pattern" />
+		<g:string>)</g:string>
+		<g:choice>
+			<g:zeroOrMore>
+				<g:string>\n</g:string>
+			</g:zeroOrMore>
+			<g:ref name="compound_list" />
+		</g:choice>
+	</g:production>
+	<g:production name="case_item">
+		<g:optional>
+			<g:string>(</g:string>
+		</g:optional>
+		<g:ref name="pattern" />
+		<g:string>)</g:string>
+		<g:choice>
+			<g:zeroOrMore>
+				<g:string>\n</g:string>
+			</g:zeroOrMore>
+			<g:ref name="compound_list" />
+		</g:choice>
+		<g:string>;;</g:string>
+		<g:zeroOrMore>
+			<g:string>\n</g:string>
+		</g:zeroOrMore>
+	</g:production>
+	<g:production name="if_clause">
+		<g:string>if</g:string>
+		<g:ref name="compound_list" />
+		<g:string>then</g:string>
+		<g:ref name="compound_list" />
+		<g:optional>
+			<g:zeroOrMore>
+				<g:string>elif</g:string>
+				<g:ref name="compound_list" />
+				<g:string>then</g:string>
+				<g:ref name="compound_list" />
+			</g:zeroOrMore>
+			<g:choice>
+				<g:sequence>
+					<g:string>elif</g:string>
+					<g:ref name="compound_list" />
+					<g:string>then</g:string>
+				</g:sequence>
+				<g:string>else</g:string>
+			</g:choice>
+			<g:ref name="compound_list" />
+		</g:optional>
+		<g:string>fi</g:string>
+	</g:production>
+	<g:production name="while_clause">
+		<g:string>while</g:string>
+		<g:ref name="compound_list" />
+		<g:ref name="do_group" />
+	</g:production>
+	<g:production name="until_clause">
+		<g:string>until</g:string>
+		<g:ref name="compound_list" />
+		<g:ref name="do_group" />
+	</g:production>
+	<g:production name="function_definition">
+		<g:ref name="fname" />
+		<g:string>(</g:string>
+		<g:string>)</g:string>
+		<g:zeroOrMore>
+			<g:string>\n</g:string>
+		</g:zeroOrMore>
+		<g:ref name="function_body" />
+	</g:production>
+	<g:production name="function_body">
+		<g:ref name="compound_command" />
+		<g:optional>
+			<g:ref name="redirect_list" />
+		</g:optional>
+	</g:production>
+	<g:production name="brace_group">
+		<g:string>{</g:string>
+		<g:ref name="compound_list" />
+		<g:string>}</g:string>
+	</g:production>
+	<g:production name="do_group">
+		<g:string>do</g:string>
+		<g:ref name="compound_list" />
+		<g:string>done</g:string>
+	</g:production>
+	<g:production name="simple_command">
+		<g:zeroOrMore>
+			<g:ref name="cmd_prefix" />
+		</g:zeroOrMore>
+		<g:ref name="cmd_name" />
+		<g:zeroOrMore>
+			<g:ref name="cmd_suffix" />
+		</g:zeroOrMore>
+	</g:production>
+	<g:production name="redirect_list">
+		<g:oneOrMore>
+			<g:ref name="io_redirect" />
+		</g:oneOrMore>
+	</g:production>
+	<g:production name="io_file">
+		<g:choice>
+			<g:string>&lt;</g:string>
+			<g:string>&lt;&amp;</g:string>
+			<g:string>&gt;</g:string>
+			<g:string>&gt;&amp;</g:string>
+			<g:string>&gt;&gt;</g:string>
+			<g:string>&lt;&gt;</g:string>
+			<g:string>&gt;|</g:string>
+		</g:choice>
+		<g:ref name="filename" />
+	</g:production>
+	<g:production name="io_here">
+		<g:choice>
+			<g:string>&lt;&lt;</g:string>
+			<g:string>&lt;&lt;-</g:string>
+		</g:choice>
+		<g:ref name="here_end" />
+	</g:production>
+	<g:production name="separator_op">
+		<g:choice>
+			<g:string>&amp;</g:string>
+			<g:string>;</g:string>
+		</g:choice>
+	</g:production>
+	<g:production name="separator">
+		<g:choice>
+			<g:ref name="separator_op" />
+			<g:string>\n</g:string>
+		</g:choice>
+		<g:zeroOrMore>
+			<g:string>\n</g:string>
+		</g:zeroOrMore>
+	</g:production>
+	<g:production name="sequential_sep">
+		<g:choice>
+			<g:string>;</g:string>
+			<g:string>\n</g:string>
+		</g:choice>
+		<g:zeroOrMore>
+			<g:string>\n</g:string>
+		</g:zeroOrMore>
+	</g:production>
+	<g:production name="io_redirect">
+		<g:charClass>
+			<g:charRange minChar="1" maxChar="9" />
+		</g:charClass>
+		<g:zeroOrMore>
+			<g:charClass>
+				<g:charRange minChar="0" maxChar="9" />
+			</g:charClass>
+		</g:zeroOrMore>
+		<g:choice>
+			<g:ref name="io_file" />
+			<g:ref name="io_here" />
+		</g:choice>
+	</g:production>
+	<g:production name="case_clause">
+		<g:string>case</g:string>
+		<g:ref name="WORD" />
+		<g:zeroOrMore>
+			<g:string>\n</g:string>
+		</g:zeroOrMore>
+		<g:string>in</g:string>
+		<g:zeroOrMore>
+			<g:string>\n</g:string>
+		</g:zeroOrMore>
+		<g:optional>
+			<g:choice>
+				<g:ref name="case_list" />
+				<g:ref name="case_list_ns" />
+			</g:choice>
+		</g:optional>
+		<g:string>esac</g:string>
+	</g:production>
+	<g:production name="WORD">
+		<g:charClass>
+			<g:charRange minChar="a" maxChar="z" />
+			<g:charRange minChar="A" maxChar="Z" />
+			<g:char>_</g:char>
+		</g:charClass>
+		<g:zeroOrMore>
+			<g:charClass>
+				<g:charRange minChar="a" maxChar="z" />
+				<g:charRange minChar="A" maxChar="Z" />
+				<g:char>_</g:char>
+				<g:charRange minChar="0" maxChar="9" />
+			</g:charClass>
+		</g:zeroOrMore>
+	</g:production>
+	<g:production name="cmd_prefix">
+		<g:choice>
+			<g:ref name="io_redirect" />
+			<g:ref name="assignment" />
+		</g:choice>
+	</g:production>
+	<g:production name="cmd_suffix">
+		<g:choice>
+			<g:ref name="io_redirect" />
+			<g:ref name="WORD" />
+		</g:choice>
+	</g:production>
+	<g:production name="pattern">
+		<g:ref name="WORD" />
+		<g:zeroOrMore>
+			<g:string>|</g:string>
+			<g:ref name="WORD" />
+		</g:zeroOrMore>
+	</g:production>
+	<g:production name="fname">
+		<g:ref name="WORD" />
+	</g:production>
+	<g:production name="name">
+		<g:charClass>
+			<g:charRange minChar="a" maxChar="z" />
+			<g:charRange minChar="A" maxChar="Z" />
+			<g:char>_</g:char>
+		</g:charClass>
+		<g:zeroOrMore>
+			<g:charClass>
+				<g:charRange minChar="a" maxChar="z" />
+				<g:charRange minChar="A" maxChar="Z" />
+				<g:charRange minChar="0" maxChar="9" />
+				<g:char>_</g:char>
+			</g:charClass>
+		</g:zeroOrMore>
+	</g:production>
+	<g:production name="assignment">
+		<g:ref name="name" />
+		<g:string>=</g:string>
+		<g:ref name="WORD" />
+	</g:production>
+	<g:production name="cmd_name">
+		<g:ref name="WORD" />
+	</g:production>
+	<g:production name="filename">
+		<g:ref name="WORD" />
+	</g:production>
+	<g:production name="here_end">
+		<g:ref name="WORD" />
+	</g:production>
+</g:grammar>
+
