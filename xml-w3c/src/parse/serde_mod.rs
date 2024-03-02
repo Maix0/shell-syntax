@@ -201,11 +201,16 @@ impl RawRule {
 }
 
 impl RawGrammar {
-    pub(super) fn validate(self) -> Result<Grammar, Error> {
+    pub(super) fn validate<'tokens>(
+        self,
+        token_names: impl Iterator<Item = &'tokens str>,
+    ) -> Result<Grammar, Error> {
         let mut out = Grammar {
             rules: HashMap::with_capacity(self.production.len()),
         };
         let mut referenced = HashSet::<String>::new();
+        referenced.extend(token_names.map(String::from));
+
         for rule in self.production {
             let mut p = Production {
                 name: rule.name.clone(),

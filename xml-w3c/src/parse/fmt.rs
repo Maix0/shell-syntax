@@ -109,9 +109,9 @@ impl<'a> Display for ED<'a, Grammar> {
         let mut iter = self.0.rules.values();
         let mut print = |nl, r| {
             if f.alternate() {
-                writeln!(f, "{nl}{:#}", ED(r))
+                write!(f, "{nl}{:#}", ED(r))
             } else {
-                writeln!(f, "{nl}{:#}", ED(r))
+                write!(f, "{nl}{:#}", ED(r))
             }
         };
         if let Some(r) = iter.next() {

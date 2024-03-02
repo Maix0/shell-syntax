@@ -65,16 +65,30 @@ pub enum Rule {
     },
 }
 
+#[derive(Clone, Debug, Default)]
+pub struct TokenDefinition {
+    tokens: HashMap<String, ()>,
+}
+
+impl TokenDefinition {
+    fn token_names(&self) -> impl Iterator<Item = &'_ str> {
+        self.tokens.keys().map(|s| s.as_str())
+    }
+}
+
 impl Grammar {
-    pub fn from_xml_reader<R: std::io::BufRead>(r: R) -> Result<Self, Error> {
+    pub fn from_xml_reader<R: std::io::BufRead>(
+        r: R,
+        token_definition: TokenDefinition,
+    ) -> Result<Self, Error> {
         let val = quick_xml::de::from_reader::<R, serde_mod::RawGrammar>(r)
             .map_err(Error::DeserializationError)?;
-        val.validate()
+        val.validate(token_definition.token_names())
     }
-    pub fn from_xml_str(s: &str) -> Result<Self, Error> {
+    pub fn from_xml_str(s: &str, token_definition: TokenDefinition) -> Result<Self, Error> {
         let val = quick_xml::de::from_str::<serde_mod::RawGrammar>(s)
             .map_err(Error::DeserializationError)?;
-        val.validate()
+        val.validate(token_definition.token_names())
     }
     pub fn as_display_ebnf(&self) -> impl std::fmt::Display + '_ {
         fmt::EbnfDisplay(self)
