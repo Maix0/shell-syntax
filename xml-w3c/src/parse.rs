@@ -5,6 +5,7 @@ mod serde_mod;
 
 #[derive(Debug, Clone)]
 pub enum Error {
+    WrongChildType,
     ExpectedChar,
     EmptySubRule,
     DuplicateProduction(String),
@@ -39,10 +40,11 @@ pub enum Rule {
     String { val: String },
     Choice { rules: Vec<Rule> },
     Sequence { rules: Vec<Rule> },
-    CharClass { classes: Vec<CharClass> },
     Optional { rule: Box<Rule> },
     ZeroOrMore { rule: Box<Rule> },
     OneOrMore { rule: Box<Rule> },
+    CharClass { classes: Vec<CharClass> },
+    Complement { classes: Vec<CharClass> },
 }
 
 impl Grammar {

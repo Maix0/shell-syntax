@@ -56,6 +56,10 @@ pub enum RawRule {
         #[serde(rename = "$value")]
         childs: Vec<RawRule>,
     },
+    Complement {
+        #[serde(rename = "$value")]
+        childs: Vec<RawRule>,
+    },
     OneOrMore {
         #[serde(rename = "$value")]
         childs: Vec<RawRule>,
@@ -165,6 +169,23 @@ impl RawRule {
                 }
                 Ok(Rule::CharClass {
                     classes: childs
+                        .into_iter()
+                        .map(|r| r.validate(referenced))
+                        .collect::<Result<Vec<_>, _>>()?,
+                })
+            }
+            Self::Complement { mut childs } => {
+                if childs.len() != 1 {
+                    return Err(Error::EmptySubRule);
+                }
+                if !matches!(childs.first(), Some(Self::CharClass { .. })) {
+                    return Err(Error::WrongChildType);
+                }
+                let Self::CharClass { childs: chars } = childs.pop().unwrap() else {
+                    unreachable!("has been checked before!");
+                };
+                Ok(Rule::Complement {
+                    classes: chars
                         .into_iter()
                         .map(|r| r.validate(referenced))
                         .collect::<Result<Vec<_>, _>>()?,

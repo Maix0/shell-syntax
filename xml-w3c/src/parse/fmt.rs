@@ -3,9 +3,36 @@ use std::fmt::Display;
 
 impl Display for Rule {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        fn print_char_class<'a>(
+            f: &mut std::fmt::Formatter,
+            iter: impl IntoIterator<Item = &'a CharClass>,
+        ) -> std::fmt::Result {
+            for r in iter {
+                match r {
+                    CharClass::Char { chr } => write!(f, "{chr}")?,
+                    CharClass::CharRange { range } => {
+                        write!(f, "{}-{}", range.start(), range.end())?
+                    }
+                }
+            }
+            Ok(())
+        }
+
         match self {
             Self::Ref { ref_name } => write!(f, "{ref_name}")?,
-            Self::String { val } => write!(f, "'{val}'")?,
+            Self::String { val } => write!(
+                f,
+                "{quote}{val}{quote}",
+                quote = {
+                    let single = val.contains('\'');
+                    let double = val.contains('\"');
+                    match (single, double) {
+                        (false, true | false) => '\'',
+                        (true, false) => '"',
+                        (true, true) => return Err(std::fmt::Error),
+                    }
+                }
+            )?,
             Self::Choice { rules } => {
                 if rules.len() > 1 {
                     write!(f, "(")?;
@@ -48,23 +75,12 @@ impl Display for Rule {
             }
             Self::CharClass { classes } => {
                 write!(f, "[")?;
-                let mut iter = classes.iter();
-                if let Some(r) = iter.next() {
-                    match r {
-                        CharClass::Char { chr } => write!(f, "{chr}")?,
-                        CharClass::CharRange { range } => {
-                            write!(f, "{}-{}", range.start(), range.end())?
-                        }
-                    }
-                }
-                for r in iter {
-                    match r {
-                        CharClass::Char { chr } => write!(f, "{chr}")?,
-                        CharClass::CharRange { range } => {
-                            write!(f, "{}-{}", range.start(), range.end())?
-                        }
-                    }
-                }
+                print_char_class(f, classes)?;
+                write!(f, "]")?;
+            }
+            Self::Complement { classes } => {
+                write!(f, "[^")?;
+                print_char_class(f, classes)?;
                 write!(f, "]")?;
             }
         }

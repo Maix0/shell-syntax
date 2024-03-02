@@ -4,7 +4,7 @@ extern crate xml_w3c;
 
 fn main() {
     let data = xml_w3c::Grammar::from_xml_reader(std::io::BufReader::new(
-        std::fs::read("../final.xml").unwrap().as_slice(),
+        std::fs::read("./ebnf.xml").unwrap().as_slice(),
     ))
     .unwrap();
     println!("{data}");
