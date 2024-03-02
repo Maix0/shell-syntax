@@ -1,101 +1,101 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<?xml version="1.0" encoding="UTF-8"?>
-<!-- converted on Sat Mar 2, 2024, 14:52 (UTC+01) by w3c-to-w3c v0.67 which is Copyright (c) 2011-2024 by Gunther Rademacher <grd@gmx.net> -->
+<!-- converted on Sat Mar 2, 2024, 14:52 (UTC+01) by w3c-to-w3c v0.67 which is Copyright (c)
+2011-2024 by Gunther Rademacher <grd@gmx.net> -->
 <g:grammar xmlns:g="http://www.w3.org/2001/03/XPath/grammar">
-   <g:production name="letter">
-      <g:charClass>
-         <g:charRange minChar="A" maxChar="Z"/>
-         <g:charRange minChar="a" maxChar="Z"/>
-      </g:charClass>
-   </g:production>
-   <g:production name="digit">
-      <g:charClass>
-         <g:charRange minChar="0" maxChar="9"/>
-      </g:charClass>
-   </g:production>
-   <g:production name="identifier">
-      <g:ref name="letter"/>
-      <g:zeroOrMore>
-         <g:choice>
-            <g:ref name="letter"/>
-            <g:ref name="digit"/>
-            <g:string>_</g:string>
-         </g:choice>
-      </g:zeroOrMore>
-   </g:production>
-   <g:production name="terminal">
-      <g:choice>
-         <g:sequence>
-            <g:string>'</g:string>
-            <g:oneOrMore>
-               <g:complement>
-                  <g:charClass>
-                     <g:char>'</g:char>
-                  </g:charClass>
-               </g:complement>
-            </g:oneOrMore>
-            <g:string>'</g:string>
-         </g:sequence>
-         <g:sequence>
-            <g:string>"</g:string>
-            <g:oneOrMore>
-               <g:complement>
-                  <g:charClass>
-                     <g:char>"</g:char>
-                  </g:charClass>
-               </g:complement>
-            </g:oneOrMore>
-            <g:string>"</g:string>
-         </g:sequence>
-      </g:choice>
-   </g:production>
-   <g:production name="optional">
-      <g:ref name="rhs"/>
-      <g:string>?</g:string>
-   </g:production>
-   <g:production name="zero_or_more">
-      <g:ref name="rhs"/>
-      <g:string>*</g:string>
-   </g:production>
-   <g:production name="one_or_more">
-      <g:ref name="rhs"/>
-      <g:string>+</g:string>
-   </g:production>
-   <g:production name="choice">
-      <g:ref name="rhs"/>
-      <g:string>|</g:string>
-      <g:ref name="rhs"/>
-   </g:production>
-   <g:production name="sequence">
-      <g:string>(</g:string>
-      <g:oneOrMore>
-         <g:ref name="rhs"/>
-      </g:oneOrMore>
-      <g:string>)</g:string>
-   </g:production>
-   <g:production name="lhs">
-      <g:ref name="identifier"/>
-   </g:production>
-   <g:production name="rhs">
-      <g:choice>
-         <g:ref name="identifier"/>
-         <g:ref name="terminal"/>
-         <g:ref name="optional"/>
-         <g:ref name="one_or_more"/>
-         <g:ref name="zero_or_more"/>
-         <g:ref name="choice"/>
-         <g:ref name="sequence"/>
-      </g:choice>
-   </g:production>
-   <g:production name="rule">
-      <g:ref name="lhs"/>
-      <g:string>::=</g:string>
-      <g:ref name="rhs"/>
-   </g:production>
-   <g:production name="grammar">
-      <g:zeroOrMore>
-         <g:ref name="rule"/>
-      </g:zeroOrMore>
-   </g:production>
+	<g:production name="letter">
+		<g:charClass>
+			<g:charRange minChar="A" maxChar="Z" />
+			<g:charRange minChar="a" maxChar="Z" />
+		</g:charClass>
+	</g:production>
+	<g:production name="digit">
+		<g:charClass>
+			<g:charRange minChar="0" maxChar="9" />
+		</g:charClass>
+	</g:production>
+	<g:production name="identifier">
+		<g:ref name="letter" />
+		<g:zeroOrMore>
+			<g:choice>
+				<g:ref name="letter" />
+				<g:ref name="digit" />
+				<g:string>_</g:string>
+			</g:choice>
+		</g:zeroOrMore>
+	</g:production>
+	<g:production name="terminal">
+		<g:choice>
+			<g:sequence>
+				<g:string>'</g:string>
+				<g:oneOrMore>
+					<g:complement>
+						<g:charClass>
+							<g:char>'</g:char>
+						</g:charClass>
+					</g:complement>
+				</g:oneOrMore>
+				<g:string>'</g:string>
+			</g:sequence>
+			<g:sequence>
+				<g:string>"</g:string>
+				<g:oneOrMore>
+					<g:complement>
+						<g:charClass>
+							<g:char>"</g:char>
+						</g:charClass>
+					</g:complement>
+				</g:oneOrMore>
+				<g:string>"</g:string>
+			</g:sequence>
+		</g:choice>
+	</g:production>
+	<g:production name="optional">
+		<g:ref name="rhs" />
+		<g:string>?</g:string>
+	</g:production>
+	<g:production name="zero_or_more">
+		<g:ref name="rhs" />
+		<g:string>*</g:string>
+	</g:production>
+	<g:production name="one_or_more">
+		<g:ref name="rhs" />
+		<g:string>+</g:string>
+	</g:production>
+	<g:production name="choice">
+		<g:ref name="rhs" />
+		<g:string>|</g:string>
+		<g:ref name="rhs" />
+	</g:production>
+	<g:production name="sequence">
+		<g:string>(</g:string>
+		<g:oneOrMore>
+			<g:ref name="rhs" />
+		</g:oneOrMore>
+		<g:string>)</g:string>
+	</g:production>
+	<g:production name="lhs">
+		<g:ref name="identifier" />
+	</g:production>
+	<g:production name="rhs">
+		<g:choice>
+			<g:ref name="identifier" />
+			<g:ref name="terminal" />
+			<g:ref name="optional" />
+			<g:ref name="one_or_more" />
+			<g:ref name="zero_or_more" />
+			<g:ref name="choice" />
+			<g:ref name="sequence" />
+		</g:choice>
+	</g:production>
+	<g:production name="rule">
+		<g:ref name="lhs" />
+		<g:string>::=</g:string>
+		<g:ref name="rhs" />
+	</g:production>
+	<g:production name="grammar">
+		<g:zeroOrMore>
+			<g:ref name="rule" />
+		</g:zeroOrMore>
+	</g:production>
 </g:grammar>
 

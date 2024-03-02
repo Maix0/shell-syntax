@@ -1,11 +1,14 @@
 use super::*;
 use std::fmt::Display;
 
-impl Display for Rule {
+pub struct EbnfDisplay<'a, T>(pub &'a T);
+use EbnfDisplay as ED;
+
+impl<'a> Display for ED<'a, Rule> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        fn print_char_class<'a>(
+        fn print_char_class<'b>(
             f: &mut std::fmt::Formatter,
-            iter: impl IntoIterator<Item = &'a CharClass>,
+            iter: impl IntoIterator<Item = &'b CharClass>,
         ) -> std::fmt::Result {
             for r in iter {
                 match r {
@@ -18,9 +21,9 @@ impl Display for Rule {
             Ok(())
         }
 
-        match self {
-            Self::Ref { ref_name } => write!(f, "{ref_name}")?,
-            Self::String { val } => write!(
+        match self.0 {
+            Rule::Ref { ref_name } => write!(f, "{ref_name}")?,
+            Rule::String { val } => write!(
                 f,
                 "{quote}{val}{quote}",
                 quote = {
@@ -33,53 +36,51 @@ impl Display for Rule {
                     }
                 }
             )?,
-            Self::Choice { rules } => {
+            Rule::Choice { rules } => {
                 if rules.len() > 1 {
                     write!(f, "(")?;
                 }
                 let mut iter = rules.iter();
                 if let Some(r) = iter.next() {
-                    write!(f, "{r}")?;
+                    write!(f, "{}", ED(r))?;
                 }
                 for r in iter {
-                    write!(f, " | {r}")?;
+                    write!(f, " | {}", ED(r))?;
                 }
                 if rules.len() > 1 {
                     write!(f, ")")?;
                 }
                 write!(f, "")?;
             }
-            Self::Sequence { rules } => {
+            Rule::Sequence { rules } => {
                 if rules.len() > 1 {
                     write!(f, "(")?;
                 }
                 let mut iter = rules.iter();
                 if let Some(r) = iter.next() {
-                    write!(f, "{r}")?;
+                    write!(f, "{}", ED(r))?;
                 }
                 for r in iter {
-                    write!(f, " {r}")?;
+                    write!(f, " {}", ED(r))?;
                 }
                 if rules.len() > 1 {
                     write!(f, ")")?;
                 }
             }
-            Self::OneOrMore { rule } => {
-                write!(f, "{rule}+")?;
+            Rule::Repeat { kind, rule } => {
+                write!(
+                    f,
+                    "{}{}",
+                    ED(&**rule),
+                    match *kind {
+                        RepeatKind::OneOrMore => "+",
+                        RepeatKind::ZeroOrMore => "*",
+                        RepeatKind::ZeroOrOnce => "?",
+                    }
+                )?;
             }
-            Self::ZeroOrMore { rule } => {
-                write!(f, "{rule}*")?;
-            }
-            Self::Optional { rule } => {
-                write!(f, "{rule}?")?;
-            }
-            Self::CharClass { classes } => {
-                write!(f, "[")?;
-                print_char_class(f, classes)?;
-                write!(f, "]")?;
-            }
-            Self::Complement { classes } => {
-                write!(f, "[^")?;
+            Rule::CharClass { inverse, classes } => {
+                write!(f, "[{}", if *inverse { "^" } else { "" })?;
                 print_char_class(f, classes)?;
                 write!(f, "]")?;
             }
@@ -88,20 +89,36 @@ impl Display for Rule {
     }
 }
 
-impl Display for Production {
+impl<'a> Display for ED<'a, Production> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{} ::= ", self.name)?;
-        for r in &self.rules {
-            write!(f, "{} ", r)?;
+        write!(
+            f,
+            "{}{dif}::={dif}",
+            self.0.name,
+            dif = if f.alternate() { '\t' } else { ' ' }
+        )?;
+        for r in &self.0.rules {
+            write!(f, "{}{}", ED(r), if f.alternate() { ' ' } else { ' ' })?;
         }
         Ok(())
     }
 }
 
-impl Display for Grammar {
+impl<'a> Display for ED<'a, Grammar> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        for r in self.rules.values() {
-            writeln!(f, "{}", r)?;
+        let mut iter = self.0.rules.values();
+        let mut print = |nl, r| {
+            if f.alternate() {
+                writeln!(f, "{nl}{:#}", ED(r))
+            } else {
+                writeln!(f, "{nl}{:#}", ED(r))
+            }
+        };
+        if let Some(r) = iter.next() {
+            print("", r)?;
+        }
+        for r in iter {
+            print("\n", r)?;
         }
         Ok(())
     }

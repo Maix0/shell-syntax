@@ -7,5 +7,5 @@ fn main() {
         std::fs::read("./ebnf.xml").unwrap().as_slice(),
     ))
     .unwrap();
-    println!("{data}");
+    print!("{:#}", data.as_display_ebnf());
 }

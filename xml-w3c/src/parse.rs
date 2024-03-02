@@ -35,16 +35,34 @@ pub enum CharClass {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
+pub enum RepeatKind {
+    OneOrMore,
+    ZeroOrMore,
+    ZeroOrOnce,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum Rule {
-    Ref { ref_name: String },
-    String { val: String },
-    Choice { rules: Vec<Rule> },
-    Sequence { rules: Vec<Rule> },
-    Optional { rule: Box<Rule> },
-    ZeroOrMore { rule: Box<Rule> },
-    OneOrMore { rule: Box<Rule> },
-    CharClass { classes: Vec<CharClass> },
-    Complement { classes: Vec<CharClass> },
+    Ref {
+        ref_name: String,
+    },
+    String {
+        val: String,
+    },
+    Choice {
+        rules: Vec<Rule>,
+    },
+    Sequence {
+        rules: Vec<Rule>,
+    },
+    Repeat {
+        kind: RepeatKind,
+        rule: Box<Rule>,
+    },
+    CharClass {
+        inverse: bool,
+        classes: Vec<CharClass>,
+    },
 }
 
 impl Grammar {
@@ -57,5 +75,8 @@ impl Grammar {
         let val = quick_xml::de::from_str::<serde_mod::RawGrammar>(s)
             .map_err(Error::DeserializationError)?;
         val.validate()
+    }
+    pub fn as_display_ebnf(&self) -> impl std::fmt::Display + '_ {
+        fmt::EbnfDisplay(self)
     }
 }

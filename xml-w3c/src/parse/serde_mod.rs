@@ -143,7 +143,8 @@ impl RawRule {
                 if childs.is_empty() {
                     return Err(Error::EmptySubRule);
                 }
-                Ok(Rule::Optional {
+                Ok(Rule::Repeat {
+                    kind: RepeatKind::ZeroOrOnce,
                     rule: Self::combine(childs, referenced)?,
                 })
             }
@@ -151,7 +152,8 @@ impl RawRule {
                 if childs.is_empty() {
                     return Err(Error::EmptySubRule);
                 }
-                Ok(Rule::OneOrMore {
+                Ok(Rule::Repeat {
+                    kind: RepeatKind::OneOrMore,
                     rule: Self::combine(childs, referenced)?,
                 })
             }
@@ -159,7 +161,8 @@ impl RawRule {
                 if childs.is_empty() {
                     return Err(Error::EmptySubRule);
                 }
-                Ok(Rule::ZeroOrMore {
+                Ok(Rule::Repeat {
+                    kind: RepeatKind::ZeroOrMore,
                     rule: Self::combine(childs, referenced)?,
                 })
             }
@@ -168,6 +171,7 @@ impl RawRule {
                     return Err(Error::EmptySubRule);
                 }
                 Ok(Rule::CharClass {
+                    inverse: false,
                     classes: childs
                         .into_iter()
                         .map(|r| r.validate(referenced))
@@ -184,7 +188,8 @@ impl RawRule {
                 let Self::CharClass { childs: chars } = childs.pop().unwrap() else {
                     unreachable!("has been checked before!");
                 };
-                Ok(Rule::Complement {
+                Ok(Rule::CharClass {
+                    inverse: false,
                     classes: chars
                         .into_iter()
                         .map(|r| r.validate(referenced))
