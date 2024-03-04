@@ -3,6 +3,8 @@ use std::collections::{HashMap, HashSet};
 mod fmt;
 mod serde_mod;
 
+use crate::TokenDefinition;
+
 #[derive(Debug, Clone)]
 pub enum Error {
     WrongChildType,
@@ -63,17 +65,6 @@ pub enum Rule {
         inverse: bool,
         classes: Vec<CharClass>,
     },
-}
-
-#[derive(Clone, Debug, Default)]
-pub struct TokenDefinition {
-    tokens: HashMap<String, ()>,
-}
-
-impl TokenDefinition {
-    fn token_names(&self) -> impl Iterator<Item = &'_ str> {
-        self.tokens.keys().map(|s| s.as_str())
-    }
 }
 
 impl Grammar {
