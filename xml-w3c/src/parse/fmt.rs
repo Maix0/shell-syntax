@@ -4,6 +4,10 @@ use std::fmt::Display;
 pub struct EbnfDisplay<'a, T>(pub &'a T);
 use EbnfDisplay as ED;
 
+fn get_ascii_printable() -> impl Iterator<Item = char> {
+    '\x20'..='\x7e'
+}
+
 impl<'a> Display for ED<'a, Rule> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         fn print_char_class<'b>(
@@ -111,7 +115,7 @@ impl<'a> Display for ED<'a, Grammar> {
             if f.alternate() {
                 write!(f, "{nl}{:#}", ED(r))
             } else {
-                write!(f, "{nl}{:#}", ED(r))
+                write!(f, "{nl}{:}", ED(r))
             }
         };
         if let Some(r) = iter.next() {

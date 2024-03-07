@@ -71,7 +71,11 @@ pub enum RawRule {
 }
 
 impl RawCharClass {
-    pub(super) fn validate(self, _referenced: &mut HashSet<String>) -> Result<CharClass, Error> {
+    pub(super) fn validate(
+        self,
+        _referenced: &mut HashSet<String>,
+        _tokens: &mut crate::TokenDefinition,
+    ) -> Result<CharClass, Error> {
         match self {
             Self::Char { chr } => {
                 if chr.chars().count() != 1 {
@@ -97,22 +101,38 @@ impl RawCharClass {
     }
 }
 impl RawRule {
-    fn combine(mut this: Vec<Self>, referenced: &mut HashSet<String>) -> Result<Box<Rule>, Error> {
+    fn combine(
+        mut this: Vec<Self>,
+        referenced: &mut HashSet<String>,
+        tokens: &mut crate::TokenDefinition,
+    ) -> Result<Box<Rule>, Error> {
         if this.len() == 1 {
-            Ok(Box::new(this.pop().unwrap().validate(referenced)?))
+            Ok(Box::new(this.pop().unwrap().validate(referenced, tokens)?))
         } else {
             Ok(Box::new(Rule::Sequence {
                 rules: this
                     .into_iter()
-                    .map(|r| r.validate(referenced))
+                    .map(|r| r.validate(referenced, tokens))
                     .collect::<Result<Vec<_>, _>>()?,
             }))
         }
     }
 
-    fn validate(self, referenced: &mut HashSet<String>) -> Result<Rule, Error> {
+    fn validate(
+        self,
+        referenced: &mut HashSet<String>,
+        tokens: &mut crate::TokenDefinition,
+    ) -> Result<Rule, Error> {
         match self {
-            Self::String { val } => Ok(Rule::String { val }),
+            Self::String { val } => {
+                tokens.tokens.insert(
+                    val.clone(),
+                    crate::Token {
+                        kind: crate::TokenKind::StringLiteral(val.clone()),
+                    },
+                );
+                Ok(Rule::String { val })
+            }
             Self::Ref { ref_name } => {
                 referenced.insert(ref_name.clone());
                 Ok(Rule::Ref { ref_name })
@@ -124,7 +144,7 @@ impl RawRule {
                 Ok(Rule::Choice {
                     rules: childs
                         .into_iter()
-                        .map(|r| r.validate(referenced))
+                        .map(|r| r.validate(referenced, tokens))
                         .collect::<Result<Vec<_>, _>>()?,
                 })
             }
@@ -135,7 +155,7 @@ impl RawRule {
                 Ok(Rule::Sequence {
                     rules: childs
                         .into_iter()
-                        .map(|r| r.validate(referenced))
+                        .map(|r| r.validate(referenced, tokens))
                         .collect::<Result<Vec<_>, _>>()?,
                 })
             }
@@ -145,7 +165,7 @@ impl RawRule {
                 }
                 Ok(Rule::Repeat {
                     kind: RepeatKind::ZeroOrOnce,
-                    rule: Self::combine(childs, referenced)?,
+                    rule: Self::combine(childs, referenced, tokens)?,
                 })
             }
             Self::OneOrMore { childs } => {
@@ -154,7 +174,7 @@ impl RawRule {
                 }
                 Ok(Rule::Repeat {
                     kind: RepeatKind::OneOrMore,
-                    rule: Self::combine(childs, referenced)?,
+                    rule: Self::combine(childs, referenced, tokens)?,
                 })
             }
             Self::ZeroOrMore { childs } => {
@@ -163,7 +183,7 @@ impl RawRule {
                 }
                 Ok(Rule::Repeat {
                     kind: RepeatKind::ZeroOrMore,
-                    rule: Self::combine(childs, referenced)?,
+                    rule: Self::combine(childs, referenced, tokens)?,
                 })
             }
             Self::CharClass { childs } => {
@@ -174,7 +194,7 @@ impl RawRule {
                     inverse: false,
                     classes: childs
                         .into_iter()
-                        .map(|r| r.validate(referenced))
+                        .map(|r| r.validate(referenced, tokens))
                         .collect::<Result<Vec<_>, _>>()?,
                 })
             }
@@ -189,10 +209,10 @@ impl RawRule {
                     unreachable!("has been checked before!");
                 };
                 Ok(Rule::CharClass {
-                    inverse: false,
+                    inverse: true,
                     classes: chars
                         .into_iter()
-                        .map(|r| r.validate(referenced))
+                        .map(|r| r.validate(referenced, tokens))
                         .collect::<Result<Vec<_>, _>>()?,
                 })
             }
@@ -203,13 +223,14 @@ impl RawRule {
 impl RawGrammar {
     pub(super) fn validate<'tokens>(
         self,
-        token_names: impl Iterator<Item = &'tokens str>,
+        tokens: crate::TokenDefinition,
     ) -> Result<Grammar, Error> {
         let mut out = Grammar {
             rules: HashMap::with_capacity(self.production.len()),
+            tokens,
         };
         let mut referenced = HashSet::<String>::new();
-        referenced.extend(token_names.map(String::from));
+        referenced.extend(out.tokens.tokens.keys().map(String::from));
 
         for rule in self.production {
             let mut p = Production {
@@ -218,7 +239,8 @@ impl RawGrammar {
             };
 
             for sub_rule in rule.rules {
-                p.rules.push(sub_rule.validate(&mut referenced)?);
+                p.rules
+                    .push(sub_rule.validate(&mut referenced, &mut out.tokens)?);
             }
 
             if out.rules.insert(p.name.clone(), p).is_some() {
