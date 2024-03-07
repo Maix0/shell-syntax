@@ -1,3 +1,5 @@
+use crate::Token;
+
 use super::*;
 use serde::{Deserialize, Serialize};
 
@@ -124,15 +126,7 @@ impl RawRule {
         tokens: &mut crate::TokenDefinition,
     ) -> Result<Rule, Error> {
         match self {
-            Self::String { val } => {
-                tokens.tokens.insert(
-                    val.clone(),
-                    crate::Token {
-                        kind: crate::TokenKind::StringLiteral(val.clone()),
-                    },
-                );
-                Ok(Rule::String { val })
-            }
+            Self::String { val } => Ok(Rule::String { val }),
             Self::Ref { ref_name } => {
                 referenced.insert(ref_name.clone());
                 Ok(Rule::Ref { ref_name })
@@ -231,6 +225,13 @@ impl RawGrammar {
         };
         let mut referenced = HashSet::<String>::new();
         referenced.extend(out.tokens.tokens.keys().map(String::from));
+
+        out.tokens.tokens.insert(
+            "__char_builtin__".to_string(),
+            Token {
+                kind: crate::TokenKind::BuiltIn,
+            },
+        );
 
         for rule in self.production {
             let mut p = Production {

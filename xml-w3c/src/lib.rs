@@ -3,6 +3,7 @@ pub use parse::*;
 
 #[derive(Clone, Debug, Default, serde::Deserialize, serde::Serialize)]
 enum TokenKind {
+    BuiltIn,
     StringLiteral(String),
     #[default]
     UserDefined,
