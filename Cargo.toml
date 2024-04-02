@@ -1,0 +1,6 @@
+[workspace]
+resolver = "2"
+members = ["xml-w3c", "lr-gen"]
+
+[patch.crates-io]
+xml-w3c = { path = "./xml-w3c/" }
