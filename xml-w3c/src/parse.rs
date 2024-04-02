@@ -52,6 +52,9 @@ pub enum Rule {
     String {
         val: String,
     },
+    Char {
+        val: char,
+    },
     Choice {
         rules: Vec<Rule>,
     },
@@ -99,6 +102,7 @@ impl Rule {
             match self {
                 Self::Ref { .. } => IterThree::Empty,
                 Self::String { .. } => IterThree::Empty,
+                Self::Char { .. } => IterThree::Empty,
                 Self::CharClass { .. } => IterThree::Empty,
                 Self::Choice { rules } => IterThree::A(rules.iter_mut().map(mut_to_ptr)),
                 Self::Sequence { rules } => IterThree::A(rules.iter_mut().map(mut_to_ptr)),
@@ -133,32 +137,48 @@ impl Grammar {
     pub fn list_tokens(&self) -> impl Iterator<Item = &'_ str> {
         self.tokens.tokens.keys().map(String::as_str)
     }
-    pub fn clone_transform_char_classes(&self) -> Self {
-        let mut new = self.clone();
-        for char_class in new
+
+    pub fn make_into_single_chars(&mut self) {
+        for string_pat in self
             .rules
             .values_mut()
             .flat_map(|r| r.rules.iter_mut())
             .flat_map(|r| unsafe { r.all_nodes() })
-            .filter(|r| matches!(unsafe { &**r }, Rule::CharClass { .. }))
+            .filter(|r| matches!(unsafe { &**r }, Rule::String { .. }))
         {
-            let Rule::CharClass { inverse, classes } = (unsafe { &*char_class }) else {
+            let Rule::String { val } = (unsafe { &*string_pat }) else {
                 unreachable!()
             };
-            let inverse = |cond: bool| if *inverse { !cond } else { cond };
-            let all_chars = ('\x07'..='\x0D').chain('\x20'..='\x7E').filter(|c| {
-                inverse(classes.iter().any(|cls| match cls {
-                    CharClass::Char { chr } => chr == c,
-                    CharClass::CharRange { range } => range.contains(c),
-                }))
-            });
-            let choices = all_chars
-                .map(|c| Rule::String { val: c.to_string() })
+            let rules = val
+                .chars()
+                .filter(|c| matches!(c, ('\x07'..='\x0D') | ('\x20'..='\x7E')))
+                .map(|c| Rule::Char { val: c })
                 .collect::<Vec<_>>();
+            if rules.is_empty() {
+                continue;
+            }
             unsafe {
-                *char_class = Rule::Choice { rules: choices };
+                *string_pat = Rule::Sequence { rules };
             }
         }
+    }
+
+    pub fn clone_chars_transform(&self) -> Self {
+        let mut new = self.clone();
+        new.transform_char_classes();
+        new.make_into_single_chars();
+        new
+    }
+
+    pub fn clone_into_single_chars(&self) -> Self {
+        let mut new = self.clone();
+        new.make_into_single_chars();
+        new
+    }
+
+    pub fn clone_transform_char_classes(&self) -> Self {
+        let mut new = self.clone();
+        new.transform_char_classes();
         new
     }
 
@@ -180,9 +200,7 @@ impl Grammar {
                     CharClass::CharRange { range } => range.contains(c),
                 }))
             });
-            let choices = all_chars
-                .map(|c| Rule::String { val: c.to_string() })
-                .collect::<Vec<_>>();
+            let choices = all_chars.map(|c| Rule::Char { val: c }).collect::<Vec<_>>();
             unsafe {
                 *char_class = Rule::Choice { rules: choices };
             }

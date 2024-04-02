@@ -8,8 +8,9 @@ fn main() {
         std::io::BufReader::new(std::fs::read("./ebnf.xml").unwrap().as_slice()),
         tokens,
     )
-    .unwrap();
-    data.transform_char_classes();
+    .unwrap()
+    .clone_chars_transform();
+    //data.transform_char_classes();
 
     println!("{:}", data.as_display_ebnf());
     println!("==========\n{:?}", data.list_tokens().collect::<Vec<_>>());

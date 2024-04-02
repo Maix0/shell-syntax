@@ -36,6 +36,7 @@ impl<'a> Display for ED<'a, Rule> {
                     }
                 }
             )?,
+            Rule::Char { val } => write!(f, "{val:?}",)?,
             Rule::Choice { rules } => {
                 if rules.len() > 1 {
                     write!(f, "(")?;
@@ -98,7 +99,7 @@ impl<'a> Display for ED<'a, Production> {
             dif = if f.alternate() { '\t' } else { ' ' }
         )?;
         for r in &self.0.rules {
-            write!(f, "{}' '", ED(r))?;
+            write!(f, "{} ", ED(r))?;
         }
         Ok(())
     }
