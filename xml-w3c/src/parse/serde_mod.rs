@@ -250,7 +250,7 @@ impl RawGrammar {
         }
 
         let keys = out.rules.keys().cloned().collect::<HashSet<_>>();
-        if referenced.is_superset(&keys) {
+        if out.tokens.tokens.len() > 1 && referenced.is_superset(&keys) {
             return Err(Error::MissingProductionInReferences(
                 referenced.difference(&keys).cloned().collect::<_>(),
             ));

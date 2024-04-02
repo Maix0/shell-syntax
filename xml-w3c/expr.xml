@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- converted on Tue Apr 2, 2024, 14:04 (UTC+02) by w3c-to-w3c v0.67 which is Copyright (c) 2011-2024 by Gunther Rademacher <grd@gmx.net> -->
+<g:grammar xmlns:g="http://www.w3.org/2001/03/XPath/grammar">
+   <g:production name="expr">
+      <g:choice>
+         <g:sequence>
+            <g:ref name="expr"/>
+            <g:ref name="operator"/>
+            <g:ref name="expr"/>
+         </g:sequence>
+         <g:ref name="number"/>
+      </g:choice>
+   </g:production>
+   <g:production name="number">
+      <g:choice>
+         <g:sequence>
+            <g:optional>
+               <g:string>-</g:string>
+            </g:optional>
+            <g:charClass>
+               <g:charRange minChar="1" maxChar="9"/>
+            </g:charClass>
+            <g:zeroOrMore>
+               <g:charClass>
+                  <g:charRange minChar="0" maxChar="9"/>
+               </g:charClass>
+            </g:zeroOrMore>
+         </g:sequence>
+         <g:string>0</g:string>
+      </g:choice>
+   </g:production>
+   <g:production name="operator">
+      <g:choice>
+         <g:string>+</g:string>
+         <g:string>-</g:string>
+         <g:string>*</g:string>
+         <g:string>/</g:string>
+      </g:choice>
+   </g:production>
+</g:grammar>
+

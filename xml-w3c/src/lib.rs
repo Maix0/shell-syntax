@@ -37,7 +37,7 @@ impl TokenDefinition {
         self
     }
 
-    fn token_names(&self) -> impl Iterator<Item = &'_ str> {
+    pub fn token_names(&self) -> impl Iterator<Item = &'_ str> {
         self.tokens.keys().map(|s| s.as_str())
     }
 }
