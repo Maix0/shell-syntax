@@ -98,7 +98,7 @@ impl<'a> Display for ED<'a, Production> {
             dif = if f.alternate() { '\t' } else { ' ' }
         )?;
         for r in &self.0.rules {
-            write!(f, "{}{}", ED(r), if f.alternate() { ' ' } else { ' ' })?;
+            write!(f, "{}' '", ED(r))?;
         }
         Ok(())
     }

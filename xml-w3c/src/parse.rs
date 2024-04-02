@@ -106,7 +106,7 @@ impl Rule {
                     IterThree::B(std::iter::once(&mut **rule).map(mut_to_ptr))
                 }
             }
-            .flat_map(|r| unsafe { (&mut *r).all_nodes() }),
+            .flat_map(|r| unsafe { (*r).all_nodes() }),
         ) as Box<dyn Iterator<Item = *mut Self> + '_>)
             .chain(std::iter::once(sptr))
     }

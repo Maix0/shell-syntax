@@ -12,6 +12,7 @@ enum TokenKind {
 #[derive(Clone, Debug, Default, serde::Deserialize, serde::Serialize)]
 struct Token {
     kind: TokenKind,
+    value: (),
 }
 
 #[derive(Clone, Debug, Default, serde::Deserialize, serde::Serialize)]
@@ -27,11 +28,11 @@ impl TokenDefinition {
     }
 
     pub fn add_token(&mut self, token_name: impl ToString, token_description: ()) -> &mut Self {
-        let _ = token_description;
         self.tokens.insert(
             token_name.to_string(),
             Token {
                 kind: TokenKind::UserDefined,
+                value: token_description,
             },
         );
         self

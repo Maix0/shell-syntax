@@ -215,10 +215,7 @@ impl RawRule {
 }
 
 impl RawGrammar {
-    pub(super) fn validate<'tokens>(
-        self,
-        tokens: crate::TokenDefinition,
-    ) -> Result<Grammar, Error> {
+    pub(super) fn validate(self, tokens: crate::TokenDefinition) -> Result<Grammar, Error> {
         let mut out = Grammar {
             rules: HashMap::with_capacity(self.production.len()),
             tokens,
@@ -230,6 +227,7 @@ impl RawGrammar {
             "__char_builtin__".to_string(),
             Token {
                 kind: crate::TokenKind::BuiltIn,
+                value: (),
             },
         );
 
