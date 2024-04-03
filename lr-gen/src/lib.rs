@@ -37,15 +37,15 @@ pub enum LR1Token {
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq)]
 pub struct LR1Item {
-    name: Crc<str>,
-    production: Vec<LR1Token>,
-    dot: usize,
-    lookahead: Option<LR1Token>,
+    pub name: Crc<str>,
+    pub production: Vec<LR1Token>,
+    pub dot: usize,
+    pub lookahead: Option<LR1Token>,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct LRGrammar {
-    productions: HashMap<Crc<str>, Vec<LR1Item>>,
+    pub productions: HashMap<Crc<str>, Vec<LR1Item>>,
 }
 
 pub fn apply_closure(lr1_items: Vec<LR1Item>, grammar: &LRGrammar) -> Vec<LR1Item> {
@@ -85,13 +85,44 @@ pub fn apply_closure(lr1_items: Vec<LR1Item>, grammar: &LRGrammar) -> Vec<LR1Ite
     new_elems
 }
 
-pub fn grammar_to_lr(grammar: Grammar) {
+pub fn grammar_to_lr(grammar: Grammar) -> LRGrammar {
     let gmr = {
         let mut g = grammar;
         g.make_into_single_chars();
         g.transform_char_classes();
         g
     };
+    let mut out = LRGrammar {
+        productions: HashMap::new(),
+    };
+
+    for prod in &gmr.rules {
+        let v = create_lr_production(&prod.1);
+        for item in v {
+            let entry = out.productions.entry(item.name.clone());
+            entry.or_default().push(item);
+        }
+    }
+    loop {
+        let old = out
+            .productions
+            .values()
+            .flat_map(|v| v.iter())
+            .cloned()
+            .collect::<Vec<_>>();
+        let new = apply_closure(old.clone(), &out);
+        let hold = old.iter().collect::<HashSet<_>>();
+        let hnew = new.iter().collect::<HashSet<_>>();
+        out.productions.clear();
+        for item in &new {
+            let entry = out.productions.entry(item.name.clone());
+            entry.or_default().push(item.clone());
+        }
+        if hnew == hold {
+            break;
+        }
+    }
+    out
 }
 
 fn create_lr_production(prod: &Production) -> Vec<LR1Item> {
@@ -141,7 +172,7 @@ fn create_lr_production(prod: &Production) -> Vec<LR1Item> {
     out_vec
 }
 
-fn lr_item_from_rule(name: Crc<str>, rule: &Rule, out: &mut Vec<LR1Item>) {
+pub fn lr_item_from_rule(name: Crc<str>, rule: &Rule, out: &mut Vec<LR1Item>) {
     let cname = name.clone();
 
     let mut c_choice = 0;
@@ -239,7 +270,50 @@ fn handle_seq(parent: &str, count: &mut usize, out: &mut Vec<LR1Item>, rules: &[
     };
     *count += 1;
     let out_name: Crc<str> = name.clone();
+    let mut c_choice = 0;
+    let mut c_rep = 0;
+    let mut c_seq = 0;
+    let item = LR1Item {
+        name: name.clone(),
+        production: {
+            let mut v = Vec::new();
+            rules
+                    .iter()
+                    .map(|r| match r {
+                        Rule::Char { val } => v.push(LR1Token::Terminal(*val)),
+                        Rule::Ref { ref_name } => v
+                            .push(LR1Token::NonTerminal(ref_name.as_str().into())),
+                        Rule::Choice { rules } => v.push(LR1Token::NonTerminal(handle_choice(
+                            &*name,
+                            &mut c_choice,
+                            out,
+                            rules.as_slice(),
+                        ))),
+                        Rule::Repeat { kind, rule } => v.push(LR1Token::NonTerminal(handle_rep(
+                            &*name,
+                            &mut c_rep,
+                            out,
+                            rule,
+                            kind.clone(),
+                        ))),
+                        Rule::Sequence { rules } => v.push(LR1Token::NonTerminal(handle_seq(
+                            &*name,
+                            &mut c_seq,
+                            out,
+                            rules.as_slice(),
+                        ))),
+                        Rule::String { .. } | Rule::CharClass { .. } => {
+                            panic!("Invalid kind of Rule, please make sure grammar is preprocessed correctly !")
+                        }
 
+                    })
+                    .for_each(drop);
+            v
+        },
+        dot: 0,
+        lookahead: None,
+    };
+    out.push(item);
     out_name
 }
 
@@ -276,10 +350,21 @@ fn handle_rep(
     };
     match kind {
         xml_w3c::RepeatKind::OneOrMore => {
-
+            out.push(item1);
         }
-        xml_w3c::RepeatKind::ZeroOrMore => {}
-        xml_w3c::RepeatKind::ZeroOrOnce => {}
+        xml_w3c::RepeatKind::ZeroOrMore => {
+            let mut item2 = item1.clone();
+            item2.production.clear();
+            out.push(item1);
+            out.push(item2);
+        }
+        xml_w3c::RepeatKind::ZeroOrOnce => {
+            let mut item2 = item1.clone();
+            item1.production.pop();
+            item2.production.clear();
+            out.push(item1);
+            out.push(item2);
+        }
     }
 
     out_name
