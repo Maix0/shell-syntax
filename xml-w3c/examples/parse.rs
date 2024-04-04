@@ -5,7 +5,11 @@ extern crate xml_w3c;
 fn main() {
     let tokens = xml_w3c::TokenDefinition::new();
     let mut data = xml_w3c::Grammar::from_xml_reader(
-        std::io::BufReader::new(std::fs::read("./ebnf.xml").unwrap().as_slice()),
+        std::io::BufReader::new(
+            std::fs::read(std::env::args().skip(1).next().unwrap())
+                .unwrap()
+                .as_slice(),
+        ),
         tokens,
     )
     .unwrap()

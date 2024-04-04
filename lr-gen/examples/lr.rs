@@ -41,11 +41,12 @@ fn main() {
         print!(",");
         for lookahead in &prod.lookahead {
             match lookahead {
-                LR1Token::EndOfInput => println!(" $"),
-                LR1Token::Terminal(c) => println!(" {c:?}"),
-                LR1Token::NonTerminal(ref name) => println!(" {name}"),
+                LR1Token::EndOfInput => print!(" $"),
+                LR1Token::Terminal(c) => print!(" {c:?}"),
+                LR1Token::NonTerminal(ref name) => print!(" {name}"),
             }
         }
+        println!()
     }
 
     println!("\n\n\n==================================\n\n\n");

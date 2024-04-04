@@ -161,7 +161,7 @@ pub fn grammar_to_lr(grammar: Grammar) -> LRGrammar {
             let entry = out.productions.entry(item.name.clone());
             entry.or_default().push(item.clone());
         }
-        // /*
+        /*
         let non_terminal = get_all_non_terminal(&out);
         let mut append_new = Vec::new();
         for nt in &non_terminal {
@@ -173,7 +173,7 @@ pub fn grammar_to_lr(grammar: Grammar) -> LRGrammar {
             let entry = out.productions.entry(item.name.clone());
             entry.or_default().push(item.clone());
         }
-        // */
+        */
         let hnew = out
             .productions
             .values()
