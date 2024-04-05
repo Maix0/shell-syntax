@@ -2,7 +2,7 @@ use super::*;
 
 pub fn create_lr_production(prod: &Production) -> Vec<LR1Item> {
     let mut out = LR1Item {
-        dot: 0,
+        // dot: 0,
         lookahead: vec![LR1Token::EndOfInput],
         lhs: prod.name.as_str().into(),
         rhs: Vec::new(),
@@ -57,24 +57,24 @@ pub fn lr_item_from_rule(name: Crc<str>, rule: &Rule, out: &mut Vec<LR1Item>) {
         Rule::Ref { ref_name } => LR1Item {
             lhs: name,
             rhs: vec![LR1Token::NonTerminal(ref_name.as_str().into())],
-            dot: 0,
+            // dot: 0,
             lookahead: vec![LR1Token::EndOfInput],
         },
         Rule::Char { val } => LR1Item {
             lhs: name,
             rhs: vec![LR1Token::Terminal(*val)],
-            dot: 0,
+            // dot: 0,
             lookahead: vec![LR1Token::EndOfInput],
         },
         Rule::Choice { rules } => LR1Item {
             lhs: name,
             rhs: vec![LR1Token::NonTerminal(handle_choice(
-                &*cname,
+                &cname,
                 &mut 0,
                 out,
                 rules.as_slice(),
             ))],
-            dot: 0,
+            // dot: 0,
             lookahead: vec![LR1Token::EndOfInput],
         },
         Rule::Sequence { rules } => LR1Item {
@@ -88,20 +88,20 @@ pub fn lr_item_from_rule(name: Crc<str>, rule: &Rule, out: &mut Vec<LR1Item>) {
                             .push(LR1Token::NonTerminal(ref_name.as_str().into())),
                         Rule::Char { val } => v.push(LR1Token::Terminal(*val)),
                         Rule::Choice { rules } => v.push(LR1Token::NonTerminal(handle_choice(
-                            &*cname,
+                            &cname,
                             &mut c_choice,
                             out,
                             rules.as_slice(),
                         ))),
                         Rule::Repeat { kind, rule } => v.push(LR1Token::NonTerminal(handle_rep(
-                            &*cname,
+                            &cname,
                             &mut c_rep,
                             out,
                             rule,
                             kind.clone(),
                         ))),
                         Rule::Sequence { rules } => v.push(LR1Token::NonTerminal(handle_seq(
-                            &*cname,
+                            &cname,
                             &mut c_seq,
                             out,
                             rules.as_slice(),
@@ -114,19 +114,19 @@ pub fn lr_item_from_rule(name: Crc<str>, rule: &Rule, out: &mut Vec<LR1Item>) {
                     .for_each(drop);
                 v
             },
-            dot: 0,
+            // dot: 0,
             lookahead: vec![LR1Token::EndOfInput],
         },
         Rule::Repeat { kind, rule } => LR1Item {
             lhs: name,
             rhs: vec![LR1Token::NonTerminal(handle_rep(
-                &*cname,
+                &cname,
                 &mut 0,
                 out,
                 rule,
                 kind.clone(),
             ))],
-            dot: 0,
+            // dot: 0,
             lookahead: vec![LR1Token::EndOfInput],
         },
 
@@ -159,20 +159,20 @@ fn handle_seq(parent: &str, count: &mut usize, out: &mut Vec<LR1Item>, rules: &[
                         Rule::Ref { ref_name } => v
                             .push(LR1Token::NonTerminal(ref_name.as_str().into())),
                         Rule::Choice { rules } => v.push(LR1Token::NonTerminal(handle_choice(
-                            &*name,
+                            &name,
                             &mut c_choice,
                             out,
                             rules.as_slice(),
                         ))),
                         Rule::Repeat { kind, rule } => v.push(LR1Token::NonTerminal(handle_rep(
-                            &*name,
+                            &name,
                             &mut c_rep,
                             out,
                             rule,
                             kind.clone(),
                         ))),
                         Rule::Sequence { rules } => v.push(LR1Token::NonTerminal(handle_seq(
-                            &*name,
+                            &name,
                             &mut c_seq,
                             out,
                             rules.as_slice(),
@@ -185,7 +185,7 @@ fn handle_seq(parent: &str, count: &mut usize, out: &mut Vec<LR1Item>, rules: &[
                     .for_each(drop);
             v
         },
-        dot: 0,
+        // dot: 0,
         lookahead: vec![LR1Token::EndOfInput],
     };
     out.push(item);
@@ -207,7 +207,7 @@ fn handle_rep(
     *count += 1;
     let out_name: Crc<str> = name.clone();
     let mut item1 = LR1Item {
-        dot: 0,
+        // dot: 0,
         lookahead: vec![LR1Token::EndOfInput],
         lhs: name.clone(),
         rhs: {

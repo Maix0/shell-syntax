@@ -6,6 +6,7 @@ use xml_w3c::{Grammar, Production, Rule};
 mod commented;
 mod gmr_to_lr;
 mod operators;
+mod table;
 
 pub use gmr_to_lr::*;
 pub use operators::*;
@@ -23,13 +24,21 @@ pub enum LR1Token {
 pub struct LR1Item {
     pub lhs: Crc<str>,
     pub rhs: Vec<LR1Token>,
-    pub dot: usize,
     pub lookahead: Vec<LR1Token>,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct LRGrammar {
-    pub rules: HashMap<Crc<str>, Vec<LR1Item>>,
+    pub rules: Vec<LR1Item>,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Hash)]
+pub enum LRAction {
+    Reduce(LR1Item),
+    Shift(usize),
+    Goto(usize),
+    Error,
+    Accept,
 }
 
 /*
@@ -71,47 +80,23 @@ loop {
 }
 */
 
-pub fn grammar_to_lr(grammar: Grammar) -> LRGrammar {
+pub fn grammar_to_lr(grammar: Grammar) -> Vec<LR1Item> {
     let gmr = {
         let mut g = grammar;
         g.make_into_single_chars();
         g.transform_char_classes();
         g
     };
-    let mut out = LRGrammar {
-        rules: HashMap::new(),
-    };
+    let mut out = Vec::new();
 
     for prod in &gmr.rules {
-        let v = create_lr_production(&prod.1);
-        for item in v {
-            let entry = out.rules.entry(item.lhs.clone());
-            entry.or_default().push(item);
+        for item in create_lr_production(prod.1) {
+            out.push(item);
         }
     }
 
-    let values = std::mem::take(&mut out.rules)
-        .into_values()
-        .flat_map(|v| v.into_iter())
-        .collect::<HashSet<_>>();
-    for item in values {
-        //if item.dot == item.production.len() {
-        //    continue;
-        //}
-        let entry = out.rules.entry(item.lhs.clone());
-        entry.or_default().push(item.clone());
-    }
-    out.rules
-        .values_mut()
-        .for_each(|v| v.sort_unstable_by_key(|i| i.dot));
-    out
-}
-
-#[derive(Clone, Debug, Eq, PartialEq, Hash)]
-pub enum LRAction {
-    Reduce(LR1Item),
-    Shift(usize),
-    Goto(usize),
-    Error,
-    Accept,
+    out.into_iter()
+        .collect::<HashSet<_>>()
+        .into_iter()
+        .collect::<Vec<_>>()
 }

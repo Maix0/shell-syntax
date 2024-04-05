@@ -20,10 +20,9 @@ def closure(lr1_items, grammar):
                         added = True
     return new_items
 */
-
+/*
 pub fn apply_closure(lr1_items: Vec<LR1Item>, grammar: &LRGrammar) -> Vec<LR1Item> {
-    let mut new_set: HashSet<_, std::hash::RandomState> =
-        HashSet::from_iter(lr1_items.clone().into_iter());
+    let mut new_set: HashSet<_, std::hash::RandomState> = HashSet::from_iter(lr1_items.clone());
     let mut new_elems = lr1_items;
     let mut added = true;
     while added {
@@ -31,7 +30,7 @@ pub fn apply_closure(lr1_items: Vec<LR1Item>, grammar: &LRGrammar) -> Vec<LR1Ite
         let mut index = 0;
         while index < new_elems.len() {
             if let Some(LR1Token::NonTerminal(nt_name)) =
-                new_elems[index].rhs.get(new_elems[index].dot)
+                new_elems[index].rhs.get(0 /*new_elems[index].dot*/)
             {
                 for prod in grammar
                     .rules
@@ -42,7 +41,6 @@ pub fn apply_closure(lr1_items: Vec<LR1Item>, grammar: &LRGrammar) -> Vec<LR1Ite
                     let new_item = LR1Item {
                         lhs: prod.lhs.clone(),
                         rhs: prod.rhs.clone(),
-                        dot: 0,
                         lookahead: new_elems[index].lookahead.clone(),
                     };
                     if !new_set.contains(&new_item) {
@@ -57,7 +55,7 @@ pub fn apply_closure(lr1_items: Vec<LR1Item>, grammar: &LRGrammar) -> Vec<LR1Ite
     }
     new_elems
 }
-
+*/
 /*
 def apply_goto(lr1_items, symbol):
     new_items = set()
@@ -69,7 +67,7 @@ def apply_goto(lr1_items, symbol):
             new_items.add(new_item)
     return new_items
 */
-
+/*
 pub fn apply_goto<'g>(
     lr1_items: impl IntoIterator<Item = &'g LR1Item>,
     symbol: LR1Token,
@@ -80,11 +78,12 @@ pub fn apply_goto<'g>(
         "You need to provide an Non Terminal token !"
     );
     for item in lr1_items {
-        if item.rhs.get(item.dot) == Some(&symbol) {
-            let mut new_item = item.clone();
-            new_item.dot += 1;
+        if item.rhs.get(1 /*item.dot*/) == Some(&symbol) {
+            let new_item = item.clone();
+            //new_item.dot += 1;
             out.insert(new_item);
         }
     }
     out.into_iter().collect()
 }
+*/
