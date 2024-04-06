@@ -24,7 +24,7 @@ pub fn print_grammar(rules: &[LR1Item]) {
         ref lhs, ref rhs, ..
     } in rules
     {
-        print!("{lhs} → ");
+        print!("{} → ", lhs.get_str());
         for token in rhs {
             print!(
                 "{} ",
@@ -44,7 +44,7 @@ pub fn print_item(prefix: impl std::fmt::Display, rules: &[LR1Item], item: Dotte
         ref lhs, ref rhs, ..
     }) = item.get_rule(rules)
     {
-        print!("{prefix}{lhs} → ");
+        print!("{prefix}{} → ", lhs.get_str());
         for (idx, token) in rhs.iter().enumerate() {
             print!(
                 "{}{} ",
@@ -121,7 +121,7 @@ fn predict(rules: &[LR1Item], items: &[DottedRule]) -> Vec<DottedRule> {
     while !items.is_empty() {
         let sym = items.pop().unwrap().get_after_dot(rules);
         for (index, rule) in rules.iter().enumerate() {
-            if sym == Some(&LR1Token::NonTerminal(rule.lhs.clone())) {
+            if sym == Some(&rule.lhs) {
                 prediction.insert(DottedRule::new(index, 0));
                 if p < prediction.len() {
                     p = prediction.len();
@@ -255,7 +255,19 @@ def empty_symbols():
 empty = empty_symbols()
 */
 
-fn empty_symbols(rules: &[LR1Item]) -> HashSet<crate::Crc<str>> {
+impl LR1Token {
+    pub fn get_str(&self) -> &str {
+        match self {
+            LR1Token::NonTerminal(n) => &n,
+            LR1Token::EndOfInput => "$",
+            LR1Token::Terminal(_) => "__char_builtin__",
+        }
+    }
+}
+
+type EmptySymbols = HashSet<LR1Token>;
+
+fn empty_symbols(rules: &[LR1Item]) -> EmptySymbols {
     let mut symbols = HashSet::new();
     for LR1Item { lhs, rhs, .. } in rules {
         if rhs.is_empty() {
@@ -266,11 +278,7 @@ fn empty_symbols(rules: &[LR1Item]) -> HashSet<crate::Crc<str>> {
     let mut n = symbols.len();
     while m < n {
         for LR1Item { lhs, rhs, .. } in rules {
-            if rhs.iter().all(|x| match x {
-                LR1Token::NonTerminal(n) => symbols.contains(n),
-                LR1Token::EndOfInput => symbols.contains("$"),
-                LR1Token::Terminal(_) => symbols.contains("__char_builtin__"),
-            }) {
+            if rhs.iter().all(|x| symbols.contains(x)) {
                 symbols.insert(lhs.clone());
             }
         }
@@ -307,14 +315,16 @@ first = first_lexemes()
 print first
 */
 
-fn first_lexemes(empty: &HashSet<crate::Crc<str>>, lexemes: &[crate::Crc<str>], rules: &[LR1Item]) {
+type FirstLexemes = HashMap<LR1Token, HashSet<LR1Token>>;
+
+fn first_lexemes(empty: &EmptySymbols, lexemes: &[LR1Token], rules: &[LR1Item]) -> FirstLexemes {
     let mut symboles = HashMap::new();
     let mut routes = HashSet::new();
 
     for sym in lexemes {
         symboles.insert(sym.clone(), HashSet::from([sym.clone()]));
     }
-    for LR1Item { lhs, rhs, .. } in rules {
+    for LR1Item { lhs, .. } in rules {
         if !symboles.contains_key(lhs) {
             symboles.insert(lhs.clone(), HashSet::new());
         }
@@ -322,12 +332,7 @@ fn first_lexemes(empty: &HashSet<crate::Crc<str>>, lexemes: &[crate::Crc<str>], 
     for LR1Item { lhs, rhs, .. } in rules {
         for rhs_n in rhs {
             routes.insert((lhs.clone(), rhs_n.clone()));
-            let s = match rhs_n {
-                LR1Token::NonTerminal(n) => &n,
-                LR1Token::EndOfInput => "$",
-                LR1Token::Terminal(_) => "__char_builtin__",
-            };
-            if !empty.contains(s) {
+            if !empty.contains(rhs_n) {
                 break;
             }
         }
@@ -338,16 +343,134 @@ fn first_lexemes(empty: &HashSet<crate::Crc<str>>, lexemes: &[crate::Crc<str>], 
 
         for (lhs, rhs0) in &routes {
             let n = symboles.get(lhs).map(|s| s.len()).unwrap_or(0);
-            let add = symboles[match rhs0 {
-                LR1Token::NonTerminal(n) => &n,
-                LR1Token::EndOfInput => "$",
-                LR1Token::Terminal(_) => "__char_builtin__",
-            }]
-            .iter()
-            .cloned()
-            .collect::<Vec<_>>();
+            let add = symboles[rhs0].iter().cloned().collect::<Vec<_>>();
             symboles.entry(lhs.clone()).or_default().extend(add);
             rep |= n < symboles[lhs].len();
+        }
+    }
+    symboles
+}
+
+/*
+def follow_lexemes(seedset, full_itemset):
+    symbols = {}
+    seeds = {}
+    routes = set()
+    for item in full_itemset:
+        sym0 = after_dot(item)
+        if sym0 not in symbols:
+            symbols[sym0] = set()
+            seeds[sym0] = set()
+    for rule,index in full_itemset:
+        lhs,rhs = grammar[rule]
+        if index < len(rhs):
+            rhs0 = rhs[index]
+            k = index+1
+            # does modify k after the for loop
+            for k in range(index+1, len(rhs)):
+                symbols[rhs0].update(first[rhs[k]])
+                if rhs[k] not in empty:
+                    break
+            # k has been modified
+            if k == len(rhs):
+                if (rule,index) in seedset:
+                    seeds[rhs0].add((rule,index))
+                else:
+                    routes.add((lhs, rhs0))
+    rep = True
+    while rep:
+        rep = False
+        for lhs, sym in routes:
+            n = len(symbols[lhs])
+            symbols[lhs].update(symbols[rhs0])
+            rep |= n < len(symbols[lhs])
+            n = len(seeds[lhs])
+            seeds[lhs].update(seeds[rhs0])
+            rep |= n < len(seeds[lhs])
+    return symbols, seeds
+*/
+
+fn follow_lexems(
+    rules: &[LR1Item],
+    first: &FirstLexemes,
+    empty: &EmptySymbols,
+    seedset: HashSet<DottedRule>,
+    full_itemset: &[DottedRule],
+) {
+    let mut symbols = HashMap::new();
+    let mut seeds = HashMap::new();
+    let mut routes = HashSet::new();
+    for item in full_itemset {
+        let sym0 = item.get_after_dot(rules).cloned();
+        if !symbols.contains_key(&sym0) {
+            symbols.insert(sym0.clone(), HashSet::new());
+            seeds.insert(sym0.clone(), HashSet::new());
+        }
+    }
+    for item in full_itemset {
+        let Some(LR1Item { lhs, rhs, .. }) = item.get_rule(rules) else {
+            continue;
+        };
+        if let Some(rhs0) = item.get_dot(rules) {
+            let mut k = item.dot + 1;
+            for k_prime in (item.dot + 1)..(rhs.len()) {
+                k = k_prime;
+                symbols
+                    .entry(Some(rhs0.clone()))
+                    .or_default()
+                    .extend(first[&rhs[k]].iter().cloned());
+                if empty.contains(&rhs[k]) {
+                    break;
+                }
+            }
+            if k == rhs.len() {
+                if seedset.contains(item) {
+                    seeds
+                        .entry(Some(rhs0.clone()))
+                        .or_default()
+                        .insert(item.clone());
+                } else {
+                    routes.insert((lhs, rhs0));
+                }
+            }
+        }
+    }
+    let mut rep = true;
+    while rep {
+        /*
+        rep = False
+        for lhs, rhs0 in routes:
+            n = len(symbols[lhs])
+            symbols[lhs].update(symbols[rhs0])
+            rep |= n < len(symbols[lhs])
+            n = len(seeds[lhs])
+            seeds[lhs].update(seeds[rhs0])
+            rep |= n < len(seeds[lhs])
+        */
+        rep = false;
+        for (lhs, rhs0) in routes.iter() {
+            let n = symbols[&Some(lhs.clone().clone())].len();
+            let val = symbols
+                .get(&Some(rhs0.clone().clone()))
+                .iter()
+                .flat_map(|s| s.iter().cloned())
+                .collect::<Vec<_>>();
+            symbols
+                .entry(Some(lhs.clone().clone()))
+                .or_default()
+                .extend(val);
+            rep |= n < symbols[&Some(lhs.clone().clone())].len();
+            let n = seeds[&Some(lhs.clone().clone())].len();
+            let val = seeds
+                .get(&Some(rhs0.clone().clone()))
+                .iter()
+                .flat_map(|s| s.iter().cloned())
+                .collect::<Vec<_>>();
+            seeds
+                .entry(Some(lhs.clone().clone()))
+                .or_default()
+                .extend(val);
+            rep |= n < seeds[&Some(lhs.clone().clone())].len();
         }
     }
 }

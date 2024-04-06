@@ -22,7 +22,7 @@ pub enum LR1Token {
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq)]
 pub struct LR1Item {
-    pub lhs: Crc<str>,
+    pub lhs: LR1Token,
     pub rhs: Vec<LR1Token>,
     pub lookahead: Vec<LR1Token>,
 }
