@@ -390,13 +390,18 @@ def follow_lexemes(seedset, full_itemset):
     return symbols, seeds
 */
 
+type FollowLexemes = (
+    HashMap<Option<LR1Token>, HashSet<LR1Token>>,
+    HashMap<Option<LR1Token>, HashSet<DottedRule>>,
+);
+
 fn follow_lexems(
     rules: &[LR1Item],
     first: &FirstLexemes,
     empty: &EmptySymbols,
     seedset: HashSet<DottedRule>,
     full_itemset: &[DottedRule],
-) {
+) -> FollowLexemes {
     let mut symbols = HashMap::new();
     let mut seeds = HashMap::new();
     let mut routes = HashSet::new();
@@ -430,7 +435,7 @@ fn follow_lexems(
                         .or_default()
                         .insert(item.clone());
                 } else {
-                    routes.insert((lhs, rhs0));
+                    routes.insert((lhs.clone(), rhs0.clone()));
                 }
             }
         }
@@ -448,29 +453,24 @@ fn follow_lexems(
             rep |= n < len(seeds[lhs])
         */
         rep = false;
-        for (lhs, rhs0) in routes.iter() {
-            let n = symbols[&Some(lhs.clone().clone())].len();
+        for (lhs, rhs0) in &routes {
+            let n = symbols[&Some(lhs.clone())].len();
             let val = symbols
-                .get(&Some(rhs0.clone().clone()))
+                .get(&Some(rhs0.clone()))
                 .iter()
                 .flat_map(|s| s.iter().cloned())
                 .collect::<Vec<_>>();
-            symbols
-                .entry(Some(lhs.clone().clone()))
-                .or_default()
-                .extend(val);
-            rep |= n < symbols[&Some(lhs.clone().clone())].len();
-            let n = seeds[&Some(lhs.clone().clone())].len();
+            symbols.entry(Some(lhs.clone())).or_default().extend(val);
+            rep |= n < symbols[&Some(lhs.clone())].len();
+            let n = seeds[&Some(lhs.clone())].len();
             let val = seeds
-                .get(&Some(rhs0.clone().clone()))
+                .get(&Some(rhs0.clone()))
                 .iter()
                 .flat_map(|s| s.iter().cloned())
                 .collect::<Vec<_>>();
-            seeds
-                .entry(Some(lhs.clone().clone()))
-                .or_default()
-                .extend(val);
-            rep |= n < seeds[&Some(lhs.clone().clone())].len();
+            seeds.entry(Some(lhs.clone())).or_default().extend(val);
+            rep |= n < seeds[&Some(lhs.clone())].len();
         }
     }
+    (symbols, seeds)
 }
