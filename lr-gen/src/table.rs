@@ -1,4 +1,5 @@
 use super::*;
+use indexmap::{IndexMap, IndexSet};
 use std::rc::Rc;
 
 /*
@@ -112,7 +113,7 @@ def predict(items):
     return prediction
 */
 
-fn predict(rules: &[LR1Item], items: &HashSet<DottedRule>) -> Vec<DottedRule> {
+fn predict(rules: &[LR1Item], items: &IndexSet<DottedRule>) -> Vec<DottedRule> {
     let mut prediction = items.clone();
     let mut items = items.iter().cloned().collect::<Vec<_>>();
     let mut p = prediction.len();
@@ -150,7 +151,7 @@ pub fn partition(
     rules: &[LR1Item],
     items: &[DottedRule],
 ) -> Vec<(Option<LR1Token>, Vec<DottedRule>)> {
-    let mut groups = HashMap::new();
+    let mut groups = IndexMap::new();
 
     for &(mut item) in items {
         let sym = item.get_after_dot(rules);
@@ -193,23 +194,23 @@ print shifts
 print reductions
 */
 struct State1 {
-    itemsets: Vec<HashSet<DottedRule>>,
+    itemsets: Vec<IndexSet<DottedRule>>,
     rules: Vec<LR1Item>,
     lexemes: Vec<LR1Token>,
-    vectors: Vec<HashSet<DottedRule>>,
+    vectors: Vec<Vec<DottedRule>>,
     full_itemsets: Vec<Rc<[DottedRule]>>,
-    shifts: Vec<HashMap<Option<LR1Token>, usize>>,
-    reductions: Vec<HashSet<DottedRule>>,
+    shifts: Vec<IndexMap<Option<LR1Token>, usize>>,
+    reductions: Vec<IndexSet<DottedRule>>,
 }
 
 fn first_state(rules: Vec<LR1Item>, lexemes: Vec<LR1Token>) -> State1 {
-    let mut itemsets: Vec<HashSet<DottedRule>> =
-        vec![HashSet::from_iter([DottedRule::new(0, 0)].into_iter())];
+    let mut itemsets: Vec<IndexSet<DottedRule>> =
+        vec![IndexSet::from_iter([DottedRule::new(0, 0)])];
     let mut itemsets_index = itemsets
         .iter()
         .enumerate()
         .map(|(i, a)| (a.iter().cloned().collect::<Vec<_>>(), i))
-        .collect::<HashMap<_, _>>();
+        .collect::<IndexMap<_, _>>();
     let mut vectors = Vec::new();
     let mut full_itemsets = Vec::<_>::new();
     let mut shifts = Vec::new();
@@ -217,12 +218,12 @@ fn first_state(rules: Vec<LR1Item>, lexemes: Vec<LR1Token>) -> State1 {
     let mut k = 0;
     while k < itemsets.len() {
         let itemset = &itemsets[k];
-        vectors.push(itemset.clone());
+        vectors.push(itemset.clone().into_iter().collect());
         let pset = predict(&rules, itemset);
         full_itemsets.push(pset.clone().into());
         //print_itemset(k, rules, itemset);
-        let mut k_shifts = HashMap::new();
-        let mut k_reductions = HashSet::new();
+        let mut k_shifts = IndexMap::new();
+        let mut k_reductions = IndexSet::new();
         for (sym, items) in partition(&rules, &pset) {
             if sym.is_none() {
                 for i in items {
@@ -281,13 +282,13 @@ impl LR1Token {
     }
 }
 
-type EmptySymbols = HashSet<LR1Token>;
+type EmptySymbols = IndexSet<LR1Token>;
 
 fn empty_symbols(state: &State1) -> EmptySymbols {
-    let mut symbols = HashSet::new();
+    let mut symbols = IndexSet::new();
     for LR1Item { lhs, rhs, .. } in &state.rules {
         if rhs.is_empty() {
-            symbols.insert(lhs.clone());
+            symbols.insert(lhs.into_non_terminal());
         }
     }
     let mut m = 0;
@@ -295,7 +296,7 @@ fn empty_symbols(state: &State1) -> EmptySymbols {
     while m < n {
         for LR1Item { lhs, rhs, .. } in &state.rules {
             if rhs.iter().all(|x| symbols.contains(x)) {
-                symbols.insert(lhs.clone());
+                symbols.insert(lhs.into_non_terminal());
             }
         }
         m = n;
@@ -331,18 +332,18 @@ first = first_lexemes()
 print first
 */
 
-type FirstLexemes = HashMap<LR1Token, HashSet<LR1Token>>;
+type FirstLexemes = IndexMap<LR1Token, IndexSet<LR1Token>>;
 
 fn first_lexemes(empty: &EmptySymbols, state: &State1) -> FirstLexemes {
-    let mut symboles = HashMap::new();
-    let mut routes = HashSet::new();
+    let mut symboles = IndexMap::new();
+    let mut routes = IndexSet::new();
 
     for sym in &state.lexemes {
-        symboles.insert(sym.clone(), HashSet::from([sym.clone()]));
+        symboles.insert(sym.clone(), IndexSet::from([sym.clone()]));
     }
     for LR1Item { lhs, .. } in &state.rules {
         if !symboles.contains_key(lhs) {
-            symboles.insert(lhs.clone(), HashSet::new());
+            symboles.insert(lhs.clone(), IndexSet::new());
         }
     }
     for LR1Item { lhs, rhs, .. } in &state.rules {
@@ -359,7 +360,10 @@ fn first_lexemes(empty: &EmptySymbols, state: &State1) -> FirstLexemes {
 
         for (lhs, rhs0) in &routes {
             let n = symboles.get(lhs).map(|s| s.len()).unwrap_or(0);
-            let add = symboles[rhs0].iter().cloned().collect::<Vec<_>>();
+            let add = symboles[&rhs0.into_non_terminal()]
+                .iter()
+                .cloned()
+                .collect::<Vec<_>>();
             symboles.entry(lhs.clone()).or_default().extend(add);
             rep |= n < symboles[lhs].len();
         }
@@ -407,8 +411,8 @@ def follow_lexemes(seedset, full_itemset):
 */
 
 type FollowLexemes = (
-    HashMap<Option<LR1Token>, HashSet<LR1Token>>,
-    HashMap<Option<LR1Token>, HashSet<DottedRule>>,
+    IndexMap<Option<LR1Token>, IndexSet<LR1Token>>,
+    IndexMap<Option<LR1Token>, IndexSet<DottedRule>>,
 );
 
 fn follow_lexems(
@@ -416,17 +420,17 @@ fn follow_lexems(
     first: &FirstLexemes,
     empty: &EmptySymbols,
 
-    seedset: &HashSet<DottedRule>,
+    seedset: &IndexSet<DottedRule>,
     full_itemset: &[DottedRule],
 ) -> FollowLexemes {
-    let mut symbols = HashMap::new();
-    let mut seeds = HashMap::new();
-    let mut routes = HashSet::new();
+    let mut symbols = IndexMap::new();
+    let mut seeds = IndexMap::new();
+    let mut routes = IndexSet::new();
     for item in full_itemset {
         let sym0 = item.get_after_dot(&rules).cloned();
         if !symbols.contains_key(&sym0) {
-            symbols.insert(sym0.clone(), HashSet::new());
-            seeds.insert(sym0.clone(), HashSet::new());
+            symbols.insert(sym0.clone(), IndexSet::new());
+            seeds.insert(sym0.clone(), IndexSet::new());
         }
     }
     for item in full_itemset {
@@ -513,15 +517,15 @@ def followup(k, seed_lookahead, item):
 */
 
 struct State2 {
-    itemsets: Vec<HashSet<DottedRule>>,
+    itemsets: Vec<IndexSet<DottedRule>>,
     rules: Vec<LR1Item>,
     lexemes: Vec<LR1Token>,
-    vectors: Vec<HashSet<DottedRule>>,
+    vectors: Vec<Vec<DottedRule>>,
     full_itemsets: Vec<Rc<[DottedRule]>>,
-    shifts: Vec<HashMap<Option<LR1Token>, usize>>,
-    reductions: Vec<HashSet<DottedRule>>,
-    follow_syms: Vec<HashMap<Option<LR1Token>, HashSet<LR1Token>>>,
-    follow_seeds: Vec<HashMap<Option<LR1Token>, HashSet<DottedRule>>>,
+    shifts: Vec<IndexMap<Option<LR1Token>, usize>>,
+    reductions: Vec<IndexSet<DottedRule>>,
+    follow_syms: Vec<IndexMap<Option<LR1Token>, IndexSet<LR1Token>>>,
+    follow_seeds: Vec<IndexMap<Option<LR1Token>, IndexSet<DottedRule>>>,
 }
 
 fn state2(s1: State1, first: FirstLexemes, empty: EmptySymbols) -> State2 {
@@ -565,13 +569,13 @@ fn state2(s1: State1, first: FirstLexemes, empty: EmptySymbols) -> State2 {
 fn followup<'sl>(
     state: &State2,
     k: usize,
-    seed_lookahead: &HashMap<DottedRule, HashSet<LR1Token>>,
+    seed_lookahead: &IndexMap<DottedRule, Vec<Option<LR1Token>>>,
     item: DottedRule,
-) -> HashSet<LR1Token> {
+) -> Vec<Option<LR1Token>> {
     seed_lookahead.get(&item).cloned().unwrap_or_else(|| {
         let sym = Some(item.get_rule(&state.rules).unwrap().lhs.clone());
-        let mut lookahead = HashSet::new();
-        lookahead.extend(state.follow_syms[k][&sym].iter().cloned());
+        let mut lookahead = Vec::new();
+        lookahead.extend(state.follow_syms[k][&sym].iter().cloned().map(Some));
         lookahead.extend(
             state.follow_seeds[k][&sym]
                 .iter()
@@ -581,8 +585,11 @@ fn followup<'sl>(
         lookahead
     })
 }
-fn state3(
-    State2 {
+fn state3(mut s2: State2) -> State3 {
+    let mut ns = NS3::default();
+    build_decision_table(&mut s2, &mut ns, 0, vec![vec![None]]);
+
+    let State2 {
         itemsets,
         rules,
         lexemes,
@@ -592,8 +599,14 @@ fn state3(
         reductions,
         follow_syms,
         follow_seeds,
-    }: State2,
-) -> State3 {
+    }: State2 = s2;
+    let NS3 {
+        fin_index,
+        fin_vectors,
+        fin_tabs,
+        conflicts,
+    } = ns;
+
     State3 {
         itemsets,
         rules,
@@ -604,30 +617,71 @@ fn state3(
         reductions,
         follow_syms,
         follow_seeds,
-        fin_index: Default::default(),
-        fin_vectors: Default::default(),
-        fin_tabs: Default::default(),
-        conflicts: Default::default(),
+        fin_index,
+        fin_vectors,
+        fin_tabs,
+        conflicts,
     }
 }
 
-struct State3 {
-    itemsets: Vec<HashSet<DottedRule>>,
-    rules: Vec<LR1Item>,
-    lexemes: Vec<LR1Token>,
-    vectors: Vec<HashSet<DottedRule>>,
-    full_itemsets: Vec<Rc<[DottedRule]>>,
-    shifts: Vec<HashMap<Option<LR1Token>, usize>>,
-    reductions: Vec<HashSet<DottedRule>>,
-    follow_syms: Vec<HashMap<Option<LR1Token>, HashSet<LR1Token>>>,
-    follow_seeds: Vec<HashMap<Option<LR1Token>, HashSet<DottedRule>>>,
-    fin_index: HashMap<(usize, Vec<Option<LR1Token>>), ()>,
-    fin_vectors: Vec<()>,
-    fin_tabs: Vec<()>,
-    conflicts: HashMap<(), ()>,
+#[derive(Debug, Clone)]
+pub struct State3 {
+    pub itemsets: Vec<IndexSet<DottedRule>>,
+    pub rules: Vec<LR1Item>,
+    pub lexemes: Vec<LR1Token>,
+    pub vectors: Vec<Vec<DottedRule>>,
+    pub full_itemsets: Vec<Rc<[DottedRule]>>,
+    pub shifts: Vec<IndexMap<Option<LR1Token>, usize>>,
+    pub reductions: Vec<IndexSet<DottedRule>>,
+    pub follow_syms: Vec<IndexMap<Option<LR1Token>, IndexSet<LR1Token>>>,
+    pub follow_seeds: Vec<IndexMap<Option<LR1Token>, IndexSet<DottedRule>>>,
+    pub fin_index: IndexMap<(usize, Vec<Vec<Option<LR1Token>>>), usize>,
+    pub fin_vectors: Vec<(usize, Vec<Vec<Option<LR1Token>>>)>,
+    pub fin_tabs: Vec<IndexMap<Option<LR1Token>, Action>>,
+    pub conflicts: IndexMap<(usize, Option<LR1Token>), Conflicts>,
 }
 
-fn build_decision_table(s: &mut State3, k: usize, args: Vec<Option<LR1Token>>) {
+#[derive(Debug, Clone, Default)]
+struct NS3 {
+    fin_index: IndexMap<(usize, Vec<Vec<Option<LR1Token>>>), usize>,
+    fin_vectors: Vec<(usize, Vec<Vec<Option<LR1Token>>>)>,
+    fin_tabs: Vec<IndexMap<Option<LR1Token>, Action>>,
+    conflicts: IndexMap<(usize, Option<LR1Token>), Conflicts>,
+}
+
+#[derive(Debug, Clone)]
+pub struct Conflicts {
+    pub smth: (usize, usize),
+    pub conflits: Vec<(&'static str, LR1Token, Vec<LR1Token>, usize)>,
+}
+
+#[derive(Debug, Clone)]
+pub enum Action {
+    One((usize, usize)),
+    Reduce((&'static str, LR1Token, Vec<LR1Token>, usize)),
+}
+
+impl Action {
+    pub fn one(&self) -> (usize, usize) {
+        match self {
+            Self::One(r) => *r,
+            _ => panic!("not Action::One"),
+        }
+    }
+    pub fn reduce(&self) -> &(&'static str, LR1Token, Vec<LR1Token>, usize) {
+        match self {
+            Self::Reduce(r) => r,
+            _ => panic!("not Action::Reduce"),
+        }
+    }
+}
+
+fn build_decision_table(
+    s: &mut State2,
+    ns: &mut NS3,
+    k: usize,
+    mut args: Vec<Vec<Option<LR1Token>>>,
+) -> usize {
     /*
     fin_index = {}
     fin_vectors = []
@@ -643,6 +697,7 @@ fn build_decision_table(s: &mut State3, k: usize, args: Vec<Option<LR1Token>>) {
         seed_lookahead = dict(zip(vectors[k],args))
         syms = follow_syms[k]
         seeds = follow_seeds[k]
+
         for sym, (j,mode) in shifts[k].items():
             args = (j,) + tuple(
                 frozenset(followup(k, seed_lookahead, (s_item[0], s_item[1]-1)))
@@ -651,7 +706,9 @@ fn build_decision_table(s: &mut State3, k: usize, args: Vec<Option<LR1Token>>) {
                 tab[sym] = (0, fin_index[args], mode)
             else:
                 tab[sym] = (0, build_decision_table(*args), mode)
+
         had_conflicts = []
+
         for reditem in reductions[k]:
             for sym in followup(k, seed_lookahead, reditem):
                 action = ('reduce',
@@ -666,12 +723,167 @@ fn build_decision_table(s: &mut State3, k: usize, args: Vec<Option<LR1Token>>) {
                         had_conflicts.append((k,sym))
                 else:
                     tab[sym] = action
+
         if len(had_conflicts) > 0:
             print("Conflicts:".format(had_conflicts))
             for cnf in had_conflicts:
                 print(" {}: {}".format(cnf, conflicts[cnf]))
+
         return tab_index
     */
 
-    let tab = HashMap::<LR1Token, ()>::new();
+    /*
+    fin_index[(k,)+args] = tab_index = len(fin_vectors)
+    fin_vectors.append((k,)+args)
+    tab = {}
+    fin_tabs.append(tab)
+    assert len(vectors[k]) == len(args)
+    seed_lookahead = dict(zip(vectors[k],args))
+    syms = follow_syms[k]
+    seeds = follow_seeds[k]
+    */
+    ns.fin_index.insert((k, args.clone()), ns.fin_vectors.len());
+    let tab_index = ns.fin_vectors.len();
+    ns.fin_vectors.push((k, args.clone()));
+    let tab = ns.fin_tabs.len();
+    ns.fin_tabs.push(IndexMap::new());
+    assert!(s.vectors[k].len() == args.len());
+    let seed_lookahead = s.vectors[k]
+        .iter()
+        .cloned()
+        .zip(args.iter().cloned())
+        .collect::<IndexMap<_, _>>();
+
+    macro_rules! tab {
+        () => {
+            ns.fin_tabs[tab]
+        };
+    }
+
+    /*
+    for sym, (j,mode) in shifts[k].items():
+        args = (j,) + tuple(
+            frozenset(followup(k, seed_lookahead, (s_item[0], s_item[1]-1)))
+            for s_item in vectors[j])
+        if args in fin_index:
+            tab[sym] = (0, fin_index[args], mode)
+        else:
+            tab[sym] = (0, build_decision_table(*args), mode)
+    */
+    for (sym, j) in s.shifts[k].clone() {
+        args = s.vectors[j]
+            .iter()
+            .map(|s_item| {
+                followup(s, k, &seed_lookahead, {
+                    let mut t = *s_item;
+                    t.dot -= 1;
+                    t
+                })
+            })
+            .collect();
+        let nargs = args
+            .iter()
+            .map(|s| s.iter().cloned().collect::<Vec<_>>())
+            .collect::<Vec<_>>();
+        if ns.fin_index.contains_key(&(j, nargs.clone())) {
+            tab!().insert(sym.clone(), Action::One((0, ns.fin_index[&(j, nargs)])));
+        } else {
+            let val = (0, build_decision_table(s, ns, j, args));
+            tab!().insert(sym.clone(), Action::One(val));
+        }
+    }
+    /*
+    had_conflicts = []
+
+    for reditem in reductions[k]:
+        for sym in followup(k, seed_lookahead, reditem):
+            action = ('reduce',
+                grammar[reditem[0]][0],
+                len(grammar[reditem[0]][1]),
+                reditem[0])
+            if sym in tab:
+                if (k,sym) in conflicts:
+                    conflicts[(k,sym)].append(action)
+                else:
+                    conflicts[(k,sym)] = [tab[sym], action]
+                    had_conflicts.append((k,sym))
+            else:
+                tab[sym] = action
+    */
+
+    for reditem in s.reductions[k].iter() {
+        for sym in followup(s, k, &seed_lookahead, reditem.clone()) {
+            let action = (
+                "reduce",
+                reditem.get_rule(&s.rules).unwrap().lhs.clone(),
+                reditem.get_rule(&s.rules).unwrap().rhs.clone(),
+                reditem.rule,
+            );
+            if tab!().contains_key(&sym) {
+                ns.conflicts
+                    .entry((k, sym))
+                    .or_insert_with_key(|(_, sym)| Conflicts {
+                        smth: tab!()[sym].one(),
+                        conflits: Vec::new(),
+                    })
+                    .conflits
+                    .push(action);
+            } else {
+                tab!().insert(sym.clone(), Action::Reduce(action));
+            }
+        }
+    }
+    let had_conflicts = ns
+        .conflicts
+        .iter()
+        .filter(|c| c.1.conflits.len() > 1)
+        .map(|c| c.0)
+        .cloned()
+        .collect::<Vec<_>>();
+    if !had_conflicts.is_empty() {
+        println!("Conflicts!");
+        for cnf in had_conflicts {
+            println!("{:?}: {:?}", cnf, ns.conflicts[&cnf].conflits);
+        }
+    }
+
+    tab_index
+}
+
+pub fn build_parse_table(
+    rules: &[LR1Item],
+    entry_point: LR1Token,
+    mut lexemes: Vec<LR1Token>,
+) -> State3 {
+    assert!(
+        matches!(entry_point, LR1Token::NonTerminal(_)),
+        "The entry_point must be a nonTerminal token !"
+    );
+    let rules = std::iter::once(LR1Item {
+        lhs: LR1Token::NonTerminal("__entry_point__".into()),
+        rhs: vec![entry_point],
+    })
+    .chain(rules.iter().cloned())
+    .collect::<Vec<_>>();
+
+    /*
+    itemsets = [ frozenset([(0,0)]) ]
+    itemsets_index = dict((s,i) for i,s in enumerate(itemsets))
+    vectors = []
+    full_itemsets = []
+    shifts = []
+    reductions = []
+    */
+
+    lexemes.push(LR1Token::NonTerminal("__char_builtin__".into()));
+    //lexemes.push(LR1Token::NonTerminal("__eof_builtin__".into()));
+    lexemes.dedup();
+    let state1 = first_state(rules, lexemes);
+
+    let empty = empty_symbols(&state1);
+    let first = first_lexemes(&empty, &state1);
+    let state2 = state2(state1, first, empty);
+    let state3 = state3(state2);
+
+    state3
 }

@@ -10,7 +10,6 @@ mod table;
 
 pub use gmr_to_lr::*;
 
-
 type Crc<T> = std::rc::Rc<T>;
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq)]
@@ -20,11 +19,24 @@ pub enum LR1Token {
     EndOfInput,
 }
 
+impl LR1Token {
+    fn into_non_terminal(&self) -> Self {
+        thread_local! {
+            static CHAR_BUILTIN: LR1Token = LR1Token::NonTerminal("__char_builtin__".into());
+            static EOF_BUILTIN: LR1Token = LR1Token::NonTerminal("__eof_builtin__".into());
+        }
+        match self {
+            Self::Terminal(_) => CHAR_BUILTIN.with(|r| r.clone()),
+            Self::NonTerminal(_) => self.clone(),
+            Self::EndOfInput => EOF_BUILTIN.with(|r| r.clone()),
+        }
+    }
+}
+
 #[derive(Clone, Debug, Hash, Eq, PartialEq)]
 pub struct LR1Item {
     pub lhs: LR1Token,
     pub rhs: Vec<LR1Token>,
-    pub lookahead: Vec<LR1Token>,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -100,3 +112,8 @@ pub fn grammar_to_lr(grammar: Grammar) -> Vec<LR1Item> {
         .into_iter()
         .collect::<Vec<_>>()
 }
+
+pub use table::build_parse_table;
+pub use table::print_grammar;
+pub use table::print_item;
+pub use table::print_itemset;
