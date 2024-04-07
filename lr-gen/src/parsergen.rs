@@ -16,7 +16,7 @@ enum RuleName {
 impl Hash for RuleName {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         let s = match self {
-            Self::Named(r) => &r,
+            Self::Named(r) => r,
             Self::EntryPoint => "__entry_point__",
         };
         s.hash(state);
@@ -27,7 +27,7 @@ impl Hash for Token {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         let s = match self {
             Self::Terminal(_) => "__char_builtin__",
-            Self::NonTerminal(r) => &r,
+            Self::NonTerminal(r) => r,
         };
         s.hash(state)
     }
@@ -67,12 +67,12 @@ impl std::fmt::Display for RuleName {
 impl PartialEq<RuleName> for Token {
     fn eq(&self, rhs: &RuleName) -> bool {
         let s = match self {
-            Token::NonTerminal(r) => &r,
+            Token::NonTerminal(r) => r,
             Token::Terminal(_) => "__char_builtin__",
         };
         let o = match rhs {
             RuleName::EntryPoint => "__entry_point__",
-            RuleName::Named(r) => &r,
+            RuleName::Named(r) => r,
         };
 
         s == o
@@ -81,12 +81,12 @@ impl PartialEq<RuleName> for Token {
 impl PartialEq<Token> for RuleName {
     fn eq(&self, rhs: &Token) -> bool {
         let s = match rhs {
-            Token::NonTerminal(r) => &r,
+            Token::NonTerminal(r) => r,
             Token::Terminal(_) => "__char_builtin__",
         };
         let o = match self {
             RuleName::EntryPoint => "__entry_point__",
-            RuleName::Named(r) => &r,
+            RuleName::Named(r) => r,
         };
 
         s == o
@@ -208,9 +208,9 @@ pub fn after_dot(grammar: &Vec<Rule>, dr: DotRule) -> Option<Token> {
     let DotRule { rule, index } = dr;
     let Rule { lhs: _, rhs } = &grammar[rule];
     if index < rhs.len() {
-        return Some(rhs[index].clone());
+        Some(rhs[index].clone())
     } else {
-        return None;
+        None
     }
 }
 #[derive(Clone, Debug, Hash, PartialEq, Eq)]
@@ -235,8 +235,8 @@ pub fn predict(
     let mut valign: VALIGN = IndexSet::new();
     let mut cconflicts: CCONFLICTS = vec![];
     let mut p = prediction.len();
-    while !items.is_empty() {
-        let this: DotRule = items.pop().unwrap();
+    while let Some(this) = items.pop() {
+        
         let has_wfb: bool = wfb_staticraints.contains(&this) || wfb.contains(&this);
         let has_valign: bool = valign_staticraints.contains(&this) || valign.contains(&this);
         let sym: Option<Token> = after_dot(grammar, this);
@@ -266,7 +266,7 @@ pub fn predict(
             }
         }
     }
-    return (prediction, wfb, valign, cconflicts);
+    (prediction, wfb, valign, cconflicts)
 }
 type Partition = Vec<(Option<Token>, Vec<DotRule>, Mode)>;
 type Mode = u64;
@@ -285,7 +285,7 @@ pub fn partition(
         let sym: Option<Token> = after_dot(grammar, item);
         let mode: Mode = ((wfb.iter().any(|&x| x == item) as u64) << 1)
             | valign.iter().any(|&x| x == item) as u64;
-        if sym != None {
+        if sym.is_some() {
             item = DotRule::new(item.rule, item.index + 1);
         }
         if groups.contains_key(&sym) {
@@ -298,10 +298,10 @@ pub fn partition(
             modes.insert(sym, mode);
         }
     }
-    return groups
+    groups
         .into_iter()
         .map(|(sym, items)| (sym.clone(), items, modes[&sym]))
-        .collect::<Vec<_>>();
+        .collect::<Vec<_>>()
 }
 
 type Vectors = Vec<DotRule>;
@@ -361,16 +361,16 @@ fn start(
         }
         shifts.push(k_shifts);
         reductions.push(k_reductions);
-        if cconflicts.len() > 0 {
+        if !cconflicts.is_empty() {
             println!("conflict in this itemset:");
-            print_itemset(grammar, &k, itemset.clone());
+            print_itemset(grammar, k, itemset.clone());
             println!("{:?}", cconflicts);
         }
         k += 1;
     }
-    println!("{} {:?}", "shifts", shifts);
-    println!("{} {:?}", "reductions", reductions);
-    println!("{} {:?}", "itemsets", itemsets);
+    println!("shifts {:?}", shifts);
+    println!("reductions {:?}", reductions);
+    println!("itemsets {:?}", itemsets);
 }
 
 type EmptySymbols = IndexSet<RuleName>;
@@ -378,7 +378,7 @@ type EmptySymbols = IndexSet<RuleName>;
 pub fn empty_symbols(grammar: &Vec<Rule>) -> EmptySymbols {
     let mut symbols = IndexSet::new();
     for Rule { lhs, rhs } in grammar {
-        if rhs.len() == 0 {
+        if rhs.is_empty() {
             symbols.insert(lhs.clone());
         }
     }
@@ -393,7 +393,7 @@ pub fn empty_symbols(grammar: &Vec<Rule>) -> EmptySymbols {
         m = n;
         n = symbols.len();
     }
-    return symbols;
+    symbols
 }
 
 type FirstLexemes = IndexMap<Token, IndexSet<Token>>;
@@ -431,16 +431,16 @@ pub fn first_lexemes(
             rep |= n < symbols[lhs.clone()].len();
         }
     }
-    return symbols;
+    symbols
 }
 
 pub fn after_sym(grammar: &Vec<Rule>, dr: DotRule) -> Option<Token> {
     let DotRule { rule, index } = dr;
     let Rule { lhs: _, rhs } = &grammar[rule];
     if (index + 1) < rhs.len() {
-        return Some(rhs[index + 1].clone());
+        Some(rhs[index + 1].clone())
     } else {
-        return None;
+        None
     }
 }
 
@@ -508,7 +508,7 @@ pub fn follow_lexemes(
             rep |= n < seeds[lhs.clone()].len();
         }
     }
-    return (symbols, seeds);
+    (symbols, seeds)
 }
 
 fn state2(
@@ -549,14 +549,14 @@ pub fn followup(
     item: DotRule,
 ) -> FollowUp {
     if seed_lookahead.contains_key(&item) {
-        return seed_lookahead[&item].clone();
+        seed_lookahead[&item].clone()
     } else {
         let sym = &grammar[item.rule].lhs;
         let mut lookahead = IndexSet::from_iter(follow_syms[k][sym].clone());
         for seeditem in &follow_seeds[k][sym] {
             lookahead.extend(seed_lookahead[seeditem].clone());
         }
-        return lookahead;
+        lookahead
     }
 }
 
@@ -594,7 +594,7 @@ pub fn build_decision_table(
 
     assert!(vectors[k].len() == args.len());
     let seed_lookahead = std::iter::zip(
-        vectors[k].clone().into_iter(),
+        vectors[k].clone(),
         args.into_iter().map(IndexSet::from_iter),
     )
     .collect();
@@ -667,13 +667,13 @@ pub fn build_decision_table(
             }
         }
     }
-    if had_conflicts.len() > 0 {
+    if !had_conflicts.is_empty() {
         println!("Conflicts:");
         for cnf in had_conflicts {
             println!(" {:?}: {:?}", cnf, conflicts[&cnf]);
         }
     }
-    return tab_index;
+    tab_index
 }
 /*
 fn yes() {

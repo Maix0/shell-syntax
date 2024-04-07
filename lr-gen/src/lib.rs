@@ -27,7 +27,7 @@ impl std::hash::Hash for LR1Token {
         let s = match self {
             Self::Terminal(_) => "__char_builtin__",
             Self::EndOfInput => "__eof_builtin__",
-            Self::NonTerminal(val) => &val,
+            Self::NonTerminal(val) => val,
         };
 
         s.hash(state);
@@ -39,12 +39,12 @@ impl PartialEq for LR1Token {
         let s = match self {
             Self::Terminal(_) => "__char_builtin__",
             Self::EndOfInput => "__eof_builtin__",
-            Self::NonTerminal(val) => &val,
+            Self::NonTerminal(val) => val,
         };
         let o = match other {
             Self::Terminal(_) => "__char_builtin__",
             Self::EndOfInput => "__eof_builtin__",
-            Self::NonTerminal(val) => &val,
+            Self::NonTerminal(val) => val,
         };
         s == o
     }

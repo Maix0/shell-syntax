@@ -430,17 +430,17 @@ fn follow_lexems(
     let mut seeds = IndexMap::new();
     let mut routes = IndexSet::new();
     for item in full_itemset {
-        let sym0 = item.get_after_dot(&rules).cloned();
+        let sym0 = item.get_after_dot(rules).cloned();
         if !symbols.contains_key(&sym0) {
             symbols.insert(sym0.clone(), IndexSet::new());
             seeds.insert(sym0.clone(), IndexSet::new());
         }
     }
     for item in full_itemset {
-        let Some(LR1Item { lhs, rhs, .. }) = item.get_rule(&rules) else {
+        let Some(LR1Item { lhs, rhs, .. }) = item.get_rule(rules) else {
             continue;
         };
-        if let Some(rhs0) = item.get_dot(&rules) {
+        if let Some(rhs0) = item.get_dot(rules) {
             let mut k = item.dot + 1;
             for k_prime in (item.dot + 1)..(rhs.len()) {
                 k = k_prime;
@@ -786,7 +786,7 @@ fn build_decision_table(
             .collect();
         let nargs = args
             .iter()
-            .map(|s| s.iter().cloned().collect::<Vec<_>>())
+            .map(|s| s.to_vec())
             .collect::<Vec<_>>();
         if ns.fin_index.contains_key(&(j, nargs.clone())) {
             tab!().insert(sym.clone(), Action::One((0, ns.fin_index[&(j, nargs)])));
@@ -815,7 +815,7 @@ fn build_decision_table(
     */
 
     for reditem in s.reductions[k].iter() {
-        for sym in followup(s, k, &seed_lookahead, reditem.clone()) {
+        for sym in followup(s, k, &seed_lookahead, *reditem) {
             let action = (
                 "reduce",
                 reditem.get_rule(&s.rules).unwrap().lhs.clone(),
@@ -886,7 +886,7 @@ pub fn build_parse_table(
     let empty = empty_symbols(&state1);
     let first = first_lexemes(&empty, &state1);
     let state2 = state2(state1, first, empty);
-    let state3 = state3(state2);
+    
 
-    state3
+    state3(state2)
 }
