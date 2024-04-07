@@ -1,6 +1,6 @@
 extern crate xml_w3c;
 
-use std::collections::{HashSet};
+use std::collections::HashSet;
 use std::fmt::Write;
 use std::hash::Hash;
 use xml_w3c::{Grammar, Production, Rule};
@@ -8,8 +8,10 @@ use xml_w3c::{Grammar, Production, Rule};
 mod commented;
 mod gmr_to_lr;
 mod operators;
-mod table;
 mod parsergen;
+mod table;
+
+pub use parsergen::build;
 
 pub use gmr_to_lr::*;
 

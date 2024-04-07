@@ -36,6 +36,7 @@ fn main() {
 
     let grammar = lr_gen::grammar_to_lr(data);
     */
+    /*
     let grammar = vec![
         item!("program" => []),
         item!("program" => ["program", "declaration"]),
@@ -54,4 +55,6 @@ fn main() {
     );
     dbg!(out.fin_tabs);
     dbg!(out.conflicts);
+    */
+    lr_gen::build();
 }

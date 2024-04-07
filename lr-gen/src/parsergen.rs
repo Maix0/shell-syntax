@@ -236,7 +236,6 @@ pub fn predict(
     let mut cconflicts: CCONFLICTS = vec![];
     let mut p = prediction.len();
     while let Some(this) = items.pop() {
-        
         let has_wfb: bool = wfb_staticraints.contains(&this) || wfb.contains(&this);
         let has_valign: bool = valign_staticraints.contains(&this) || valign.contains(&this);
         let sym: Option<Token> = after_dot(grammar, this);
@@ -321,13 +320,13 @@ fn start(
     reductions: &mut Vec<Reductions>,
 ) {
     let mut k = 0;
-    while let Some(itemset) = itemsets.pop_front() {
-        vectors.push(itemset.clone());
+    while k < itemsets.len() {
+        vectors.push(itemsets[k].clone());
         let (pset, wfb, valign, mut cconflicts) = predict(
             grammar,
             wfb_staticraints,
             valign_staticraints,
-            itemset.clone(),
+            itemsets[k].clone(),
         );
         full_itemsets.push(pset.clone());
         let mut k_shifts = IndexMap::new();
@@ -363,7 +362,7 @@ fn start(
         reductions.push(k_reductions);
         if !cconflicts.is_empty() {
             println!("conflict in this itemset:");
-            print_itemset(grammar, k, itemset.clone());
+            print_itemset(grammar, k, itemsets[k].clone());
             println!("{:?}", cconflicts);
         }
         k += 1;
@@ -425,10 +424,10 @@ pub fn first_lexemes(
     while rep {
         rep = false;
         for (lhs, rhs0) in &routes {
-            let n = symbols[lhs.clone()].len();
-            let vals = symbols[rhs0.clone()].clone();
-            symbols[lhs.clone()].extend(vals);
-            rep |= n < symbols[lhs.clone()].len();
+            let n = symbols[*lhs].len();
+            let vals = symbols[*rhs0].clone();
+            symbols[*lhs].extend(vals);
+            rep |= n < symbols[*lhs].len();
         }
     }
     symbols
@@ -498,14 +497,14 @@ pub fn follow_lexemes(
     while rep {
         rep = false;
         for (lhs, _sym) in &routes {
-            let mut n = symbols[lhs.clone()].len();
+            let mut n = symbols[*lhs].len();
             let vals = symbols[&rhs0.clone().unwrap()].clone();
-            symbols[lhs.clone()].extend(vals);
-            rep |= n < symbols[lhs.clone()].len();
-            n = seeds[lhs.clone()].len();
+            symbols[*lhs].extend(vals);
+            rep |= n < symbols[*lhs].len();
+            n = seeds[*lhs].len();
             let vals = seeds[&rhs0.clone().unwrap()].clone();
-            seeds[lhs.clone()].extend(vals);
-            rep |= n < seeds[lhs.clone()].len();
+            seeds[*lhs].extend(vals);
+            rep |= n < seeds[*lhs].len();
         }
     }
     (symbols, seeds)
@@ -517,7 +516,7 @@ fn state2(
     first: &FirstLexemes,
     wfb_staticraints: &WFB,
     valign_staticraints: &VALIGN,
-    itemsets: &mut Vec<Vec<DotRule>>,
+    itemsets: &mut VecDeque<Vec<DotRule>>,
     full_itemsets: &mut Vec<FullItemSets>,
     follow_syms: &mut Vec<Syms>,
     follow_seeds: &mut Vec<Seeds>,
@@ -540,7 +539,7 @@ fn state2(
 type FollowUp = IndexSet<Token>;
 type SeedLookAhead = IndexMap<DotRule, FollowUp>;
 
-pub fn followup(
+fn followup(
     grammar: &Vec<Rule>,
     follow_syms: &mut Vec<Syms>,
     follow_seeds: &mut Vec<Seeds>,
@@ -598,8 +597,8 @@ pub fn build_decision_table(
         args.into_iter().map(IndexSet::from_iter),
     )
     .collect();
-    let _syms = &follow_syms[k];
-    let _seeds = &follow_seeds[k];
+    //let _syms = &follow_syms[k];
+    //let _seeds = &follow_seeds[k];
     for (sym, (j, mode)) in shifts[k].clone() {
         let args: Vec<_> = vectors[j]
             .iter()
@@ -610,16 +609,25 @@ pub fn build_decision_table(
                     follow_seeds,
                     k,
                     &seed_lookahead,
-                    DotRule::new(s_item.rule, s_item.index - 1),
+                    DotRule::new(
+                        s_item.rule,
+                        s_item
+                            .index
+                            .checked_sub(1)
+                            .unwrap_or(grammar[s_item.rule].rhs.len() - 1),
+                    ),
                 )
                 .into_iter()
                 .collect()
             })
             .collect();
         if fin_index.contains_key(&(j, args.clone())) {
-            tab![][&sym] = Action::Other((0, fin_index[&(j, args.clone())], mode));
+            tab![].insert(
+                sym.clone(),
+                Action::Other((0, fin_index[&(j, args.clone())], mode)),
+            );
         } else {
-            tab![][&sym] = Action::Other((
+            let val = Action::Other((
                 0,
                 build_decision_table(
                     grammar,
@@ -637,6 +645,7 @@ pub fn build_decision_table(
                 ),
                 mode,
             ));
+            tab![].insert(sym.clone(), val);
         }
     }
     let mut had_conflicts: Vec<_> = vec![];
@@ -663,7 +672,7 @@ pub fn build_decision_table(
                     had_conflicts.push((k, sym));
                 }
             } else {
-                tab![][&Some(sym)] = action;
+                tab![].insert(Some(sym), action);
             }
         }
     }
@@ -721,7 +730,7 @@ pub static fin_tabs: Vec<IndexMap<Option<Token>, Action>> = Vec::new();
 pub static fin_index: IndexMap<(usize, Vec<Vec<Token>>), usize> = IndexMap::new();
 pub static conflicts: IndexMap<(usize, Token), Vec<Action>> = IndexMap::new();
 */
-fn build() {
+pub fn build() {
     let grammar: Vec<Rule> = vec![
         Rule::entrypoint("program"),
         Rule::new("program", &[]),
@@ -757,13 +766,41 @@ fn build() {
     );
 
     let empty: EmptySymbols = empty_symbols(&grammar);
-    let _first: FirstLexemes = first_lexemes(&grammar, &empty, &lexemes);
+    let first: FirstLexemes = first_lexemes(&grammar, &empty, &lexemes);
 
-    let _follow_syms: Vec<Syms> = Vec::new();
-    let _follow_seeds: Vec<Seeds> = Vec::new();
+    let mut follow_syms: Vec<Syms> = Vec::new();
+    let mut follow_seeds: Vec<Seeds> = Vec::new();
+    state2(
+        &grammar,
+        &empty,
+        &first,
+        &wfb_staticraints,
+        &valign_staticraints,
+        &mut itemsets,
+        &mut full_itemsets,
+        &mut follow_syms,
+        &mut follow_seeds,
+    );
 
-    let _fin_vectors: Vec<(usize, Vec<Vec<Token>>)> = Vec::new();
-    let _fin_tabs: Vec<IndexMap<Option<Token>, Action>> = Vec::new();
-    let _fin_index: IndexMap<(usize, Vec<Vec<Token>>), usize> = IndexMap::new();
-    let _conflicts: IndexMap<(usize, Token), Vec<Action>> = IndexMap::new();
+    let mut fin_vectors: Vec<(usize, Vec<Vec<Token>>)> = Vec::new();
+    let mut fin_tabs: Vec<IndexMap<Option<Token>, Action>> = Vec::new();
+    let mut fin_index: IndexMap<(usize, Vec<Vec<Token>>), usize> = IndexMap::new();
+    let mut conflicts: IndexMap<(usize, Token), Vec<Action>> = IndexMap::new();
+
+    build_decision_table(
+        &grammar,
+        &mut follow_seeds,
+        &mut follow_syms,
+        &mut fin_index,
+        &mut fin_vectors,
+        &mut fin_tabs,
+        &mut vectors,
+        &mut shifts,
+        &mut reductions,
+        &mut conflicts,
+        0,
+        vec![vec![RuleName::EntryPoint.into()]],
+    );
+    println!("conflicts = {conflicts:?}");
+    println!("fin_tabs = {fin_tabs:?}");
 }
