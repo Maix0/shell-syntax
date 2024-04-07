@@ -1,26 +1,59 @@
 extern crate xml_w3c;
+
 use std::collections::{HashMap, HashSet};
 use std::fmt::Write;
+use std::hash::Hash;
 use xml_w3c::{Grammar, Production, Rule};
 
 mod commented;
 mod gmr_to_lr;
 mod operators;
 mod table;
+mod parsergen;
 
 pub use gmr_to_lr::*;
 
 type Crc<T> = std::rc::Rc<T>;
 
-#[derive(Clone, Debug, Hash, Eq, PartialEq)]
+#[derive(Clone, Debug)]
 pub enum LR1Token {
     Terminal(char),
     NonTerminal(Crc<str>),
     EndOfInput,
 }
 
+impl std::hash::Hash for LR1Token {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        let s = match self {
+            Self::Terminal(_) => "__char_builtin__",
+            Self::EndOfInput => "__eof_builtin__",
+            Self::NonTerminal(val) => &val,
+        };
+
+        s.hash(state);
+    }
+}
+
+impl PartialEq for LR1Token {
+    fn eq(&self, other: &Self) -> bool {
+        let s = match self {
+            Self::Terminal(_) => "__char_builtin__",
+            Self::EndOfInput => "__eof_builtin__",
+            Self::NonTerminal(val) => &val,
+        };
+        let o = match other {
+            Self::Terminal(_) => "__char_builtin__",
+            Self::EndOfInput => "__eof_builtin__",
+            Self::NonTerminal(val) => &val,
+        };
+        s == o
+    }
+}
+
+impl Eq for LR1Token {}
+
 impl LR1Token {
-    fn into_non_terminal(&self) -> Self {
+    fn _into_non_terminal(&self) -> Self {
         thread_local! {
             static CHAR_BUILTIN: LR1Token = LR1Token::NonTerminal("__char_builtin__".into());
             static EOF_BUILTIN: LR1Token = LR1Token::NonTerminal("__eof_builtin__".into());
@@ -42,15 +75,6 @@ pub struct LR1Item {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct LRGrammar {
     pub rules: Vec<LR1Item>,
-}
-
-#[derive(Clone, Debug, Eq, PartialEq, Hash)]
-pub enum LRAction {
-    Reduce(LR1Item),
-    Shift(usize),
-    Goto(usize),
-    Error,
-    Accept,
 }
 
 /*

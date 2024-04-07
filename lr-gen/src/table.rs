@@ -151,14 +151,19 @@ pub fn partition(
     rules: &[LR1Item],
     items: &[DottedRule],
 ) -> Vec<(Option<LR1Token>, Vec<DottedRule>)> {
-    let mut groups = IndexMap::new();
+    let mut groups = IndexMap::<_, Vec<_>>::new();
 
     for &(mut item) in items {
         let sym = item.get_after_dot(rules);
         if sym.is_some() {
             item.dot += 1;
         }
-        groups.entry(sym.cloned()).or_insert(Vec::new()).push(item);
+        if let Some(v) = groups.get_mut(&sym.cloned()) {
+            v.push(item);
+        } else {
+            groups.insert(sym.cloned(), vec![item]);
+        }
+        //groups.entry(sym.cloned()).or_insert(Vec::new()).push(item);
     }
 
     groups.into_iter().collect()
@@ -226,15 +231,13 @@ fn first_state(rules: Vec<LR1Item>, lexemes: Vec<LR1Token>) -> State1 {
         let mut k_reductions = IndexSet::new();
         for (sym, items) in partition(&rules, &pset) {
             if sym.is_none() {
-                for i in items {
-                    k_reductions.insert(i);
-                }
+                k_reductions.extend(items);
             } else {
-                let citems = items.clone();
-                let j = itemsets_index.get(&citems).copied().unwrap_or_else(|| {
+                let j = itemsets_index.get(&items).copied().unwrap_or_else(|| {
                     let ret = itemsets.len();
-                    itemsets_index.insert(citems.clone(), ret);
-                    itemsets.push(citems.into_iter().collect());
+                    itemsets_index.insert(items.clone(), ret);
+                    itemsets.push(items.into_iter().collect());
+                    println!("pushed");
                     ret
                 });
                 k_shifts.insert(sym, j);
@@ -242,8 +245,11 @@ fn first_state(rules: Vec<LR1Item>, lexemes: Vec<LR1Token>) -> State1 {
         }
         shifts.push(k_shifts);
         reductions.push(k_reductions);
+        println!("end of k = {k}");
         k += 1;
     }
+
+    dbg!(&shifts, &reductions, &itemsets);
     State1 {
         itemsets,
         lexemes,
@@ -288,7 +294,7 @@ fn empty_symbols(state: &State1) -> EmptySymbols {
     let mut symbols = IndexSet::new();
     for LR1Item { lhs, rhs, .. } in &state.rules {
         if rhs.is_empty() {
-            symbols.insert(lhs.into_non_terminal());
+            symbols.insert(lhs.clone());
         }
     }
     let mut m = 0;
@@ -296,7 +302,7 @@ fn empty_symbols(state: &State1) -> EmptySymbols {
     while m < n {
         for LR1Item { lhs, rhs, .. } in &state.rules {
             if rhs.iter().all(|x| symbols.contains(x)) {
-                symbols.insert(lhs.into_non_terminal());
+                symbols.insert(lhs.clone());
             }
         }
         m = n;
@@ -360,10 +366,7 @@ fn first_lexemes(empty: &EmptySymbols, state: &State1) -> FirstLexemes {
 
         for (lhs, rhs0) in &routes {
             let n = symboles.get(lhs).map(|s| s.len()).unwrap_or(0);
-            let add = symboles[&rhs0.into_non_terminal()]
-                .iter()
-                .cloned()
-                .collect::<Vec<_>>();
+            let add = symboles[rhs0].iter().cloned().collect::<Vec<_>>();
             symboles.entry(lhs.clone()).or_default().extend(add);
             rep |= n < symboles[lhs].len();
         }
