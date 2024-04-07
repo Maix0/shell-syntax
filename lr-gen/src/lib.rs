@@ -1,6 +1,6 @@
 extern crate xml_w3c;
 
-use std::collections::{HashMap, HashSet};
+use std::collections::{HashSet};
 use std::fmt::Write;
 use std::hash::Hash;
 use xml_w3c::{Grammar, Production, Rule};
