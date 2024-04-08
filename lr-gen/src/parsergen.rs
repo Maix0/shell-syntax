@@ -1,169 +1,9 @@
-use std::hash::Hash;
-
-use indexmap::Equivalent;
 use indexmap::IndexMap;
 use indexmap::IndexSet;
 
-type Rc<T> = std::rc::Rc<T>;
-
-#[derive(Debug, Clone, Eq, PartialEq)]
-pub enum RuleName {
-    EntryPoint,
-    Named(Rc<str>),
-}
-
-thread_local! {
-    static CHAR_TOK_NAME: std::cell::OnceCell<Rc<[Rc<str>; 128]>> = const { std::cell::OnceCell::new() };
-}
-
-impl Token {
-    fn get_char_names() -> Rc<[Rc<str>; 128]> {
-        CHAR_TOK_NAME.with(|c| {
-            c.get_or_init({
-                || {
-                    let mut char_iter = '\x00'..='\x7f';
-                    let arr = [(); 128];
-                    Rc::new(arr.map(|()| {
-                        let char = char_iter.next().unwrap();
-                        let s = format!("__char_builtin__{}__", char.escape_default());
-                        s.into()
-                    }))
-                }
-            })
-            .clone()
-        })
-    }
-
-    fn get_str(&self) -> Rc<str> {
-        match self {
-            Token::Terminal(c) => {
-                assert!(c.is_ascii(), "this parser currently only support ascii");
-                Self::get_char_names()[(*c as u32).to_le_bytes()[3] as usize].clone()
-            }
-            Token::NonTerminal(s) => s.clone(),
-        }
-    }
-}
-
-impl Hash for RuleName {
-    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        let s = match self {
-            Self::Named(r) => r,
-            Self::EntryPoint => "__entry_point__",
-        };
-        s.hash(state);
-    }
-}
-
-impl Hash for Token {
-    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        let s = self.get_str();
-        s.hash(state)
-    }
-}
-
-impl Equivalent<RuleName> for Token {
-    fn equivalent(&self, key: &RuleName) -> bool {
-        self == key
-    }
-}
-
-impl Equivalent<Token> for RuleName {
-    fn equivalent(&self, key: &Token) -> bool {
-        self == key
-    }
-}
-
-impl<'s> From<&'s str> for RuleName {
-    fn from(val: &'s str) -> Self {
-        Self::Named(val.into())
-    }
-}
-
-impl std::fmt::Display for RuleName {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "{}",
-            match self {
-                Self::Named(s) => &s,
-                Self::EntryPoint => "⊤",
-            }
-        )
-    }
-}
-
-impl PartialEq<RuleName> for Token {
-    fn eq(&self, rhs: &RuleName) -> bool {
-        let s = self.get_str();
-        let o = match rhs {
-            RuleName::EntryPoint => "__entry_point__",
-            RuleName::Named(r) => r,
-        };
-
-        o.eq(&*s)
-    }
-}
-impl PartialEq<Token> for RuleName {
-    fn eq(&self, rhs: &Token) -> bool {
-        let s = rhs.get_str();
-        let o = match self {
-            RuleName::EntryPoint => "__entry_point__",
-            RuleName::Named(r) => r,
-        };
-
-        o.eq(&*s)
-    }
-}
-
-#[derive(Debug, Clone, Eq, PartialEq)]
-pub enum Token {
-    NonTerminal(Rc<str>),
-    Terminal(char),
-}
-
-impl<'s> From<&'s str> for Token {
-    fn from(val: &'s str) -> Self {
-        Self::NonTerminal(val.into())
-    }
-}
-
-impl From<RuleName> for Token {
-    fn from(val: RuleName) -> Self {
-        match val {
-            RuleName::Named(val) => Self::NonTerminal(val.clone()),
-            RuleName::EntryPoint => "__entry_point__".into(),
-        }
-    }
-}
-
-impl From<Token> for RuleName {
-    fn from(val: Token) -> Self {
-        Self::Named(val.get_str())
-    }
-}
-
-#[derive(Debug, Clone, Eq, Hash, PartialEq)]
-pub struct Rule {
-    lhs: RuleName,
-    rhs: Vec<Token>,
-}
-
-impl Rule {
-    fn entrypoint(rulename: &str) -> Self {
-        Self {
-            lhs: RuleName::EntryPoint,
-            rhs: vec![rulename.into()],
-        }
-    }
-
-    pub fn new(name: &str, items: &[&str]) -> Self {
-        Self {
-            lhs: name.into(),
-            rhs: items.iter().map(|&s| s.into()).collect::<Vec<_>>(),
-        }
-    }
-}
+use crate::RuleName;
+use crate::Rule;
+use crate::Token;
 
 pub fn print_grammar(grammar: &[Rule]) {
     for Rule { lhs, rhs } in grammar {
@@ -610,8 +450,16 @@ fn followup(
 
 #[derive(Clone, Debug)]
 pub enum Action {
-    Reduce((&'static str, RuleName, usize, usize)),
-    Other((usize, usize, u64)),
+    Reduce {
+        name: RuleName,
+        len: usize,
+        goto: usize,
+    },
+    Other {
+        ty: usize,
+        goto: usize,
+        mode: Mode,
+    },
 }
 
 struct DecisionTableState<'a> {
@@ -620,7 +468,7 @@ struct DecisionTableState<'a> {
     follow_syms: &'a mut Vec<Syms>,
     fin_index: &'a mut IndexMap<(usize, Vec<Vec<Token>>), usize>,
     fin_vectors: &'a mut Vec<(usize, Vec<Vec<Token>>)>,
-    fin_tabs: &'a mut Vec<IndexMap<Option<Token>, Action>>,
+    fin_tabs: &'a mut Vec<IndexMap<Token, Action>>,
     vectors: &'a mut Vec<Vectors>,
     shifts: &'a mut Vec<Shifts>,
     reductions: &'a mut Vec<Reductions>,
@@ -659,8 +507,6 @@ fn build_decision_table(state: DecisionTableState, k: usize, args: Vec<Vec<Token
         args.into_iter().map(IndexSet::from_iter),
     )
     .collect();
-    //let _syms = &follow_syms[k];
-    //let _seeds = &follow_seeds[k];
     for (sym, (j, mode)) in shifts[k].clone() {
         let args: Vec<_> = vectors[j]
             .iter()
@@ -685,13 +531,17 @@ fn build_decision_table(state: DecisionTableState, k: usize, args: Vec<Vec<Token
             .collect();
         if fin_index.contains_key(&(j, args.clone())) {
             tab![].insert(
-                sym.clone(),
-                Action::Other((0, fin_index[&(j, args.clone())], mode)),
+                sym.unwrap(),
+                Action::Other {
+                    ty: 0,
+                    goto: fin_index[&(j, args.clone())],
+                    mode,
+                },
             );
         } else {
-            let val = Action::Other((
-                0,
-                build_decision_table(
+            let val = Action::Other {
+                ty: 0,
+                goto: build_decision_table(
                     DecisionTableState {
                         grammar,
                         follow_seeds,
@@ -708,8 +558,8 @@ fn build_decision_table(state: DecisionTableState, k: usize, args: Vec<Vec<Token
                     args.clone(),
                 ),
                 mode,
-            ));
-            tab![].insert(sym.clone(), val);
+            };
+            tab![].insert(sym.clone().unwrap(), val);
         }
     }
     let mut had_conflicts: Vec<_> = vec![];
@@ -722,28 +572,21 @@ fn build_decision_table(state: DecisionTableState, k: usize, args: Vec<Vec<Token
             &seed_lookahead,
             reditem,
         ) {
-            let action = Action::Reduce((
-                "reduce",
-                grammar[reditem.rule].lhs.clone(),
-                grammar[reditem.rule].rhs.len(),
-                reditem.rule,
-            ));
-            if tab![].contains_key(&Some(sym.clone())) {
+            let action = Action::Reduce {
+                name: grammar[reditem.rule].lhs.clone(),
+                len: grammar[reditem.rule].rhs.len(),
+                goto: reditem.rule,
+            };
+            if tab![].contains_key(&sym) {
                 if conflicts.contains_key(&(k, sym.clone())) {
                     conflicts[&(k, sym.clone())].push(action);
                 } else {
-                    conflicts[&(k, sym.clone())] = vec![tab![][&Some(sym.clone())].clone(), action];
+                    conflicts[&(k, sym.clone())] = vec![tab![][&sym].clone(), action];
                     had_conflicts.push((k, sym));
                 }
             } else {
-                tab![].insert(Some(sym), action);
+                tab![].insert(sym, action);
             }
-        }
-    }
-    if !had_conflicts.is_empty() {
-        println!("Conflicts:");
-        for cnf in had_conflicts {
-            println!(" {:?}: {:?}", cnf, conflicts[&cnf]);
         }
     }
     tab_index
@@ -796,7 +639,7 @@ static conflicts: IndexMap<(usize, Token), Vec<Action>> = IndexMap::new();
 */
 
 type Conflicts = IndexMap<(usize, Token), Vec<Action>>;
-type DecisionTable = Vec<IndexMap<Option<Token>, Action>>;
+type DecisionTable = Vec<IndexMap<Token, Action>>;
 pub fn build(
     entry_point: &str,
     grammar: Vec<Rule>,
@@ -821,7 +664,6 @@ pub fn build(
             .map(Token::NonTerminal),
     );
     lexemes.dedup();
-
 
     let mut itemsets: Vec<Vec<DotRule>> = vec![vec![DotRule::new(0, 0)]];
     let mut itemsets_index: IndexMap<Vec<DotRule>, usize> = itemsets
@@ -864,7 +706,7 @@ pub fn build(
     });
 
     let mut fin_vectors: Vec<(usize, Vec<Vec<Token>>)> = Vec::new();
-    let mut fin_tabs: Vec<IndexMap<Option<Token>, Action>> = Vec::new();
+    let mut fin_tabs: Vec<IndexMap<Token, Action>> = Vec::new();
     let mut fin_index: IndexMap<(usize, Vec<Vec<Token>>), usize> = IndexMap::new();
     let mut conflicts: IndexMap<(usize, Token), Vec<Action>> = IndexMap::new();
 
