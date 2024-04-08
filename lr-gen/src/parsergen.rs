@@ -638,8 +638,8 @@ static fin_index: IndexMap<(usize, Vec<Vec<Token>>), usize> = IndexMap::new();
 static conflicts: IndexMap<(usize, Token), Vec<Action>> = IndexMap::new();
 */
 
-type Conflicts = IndexMap<(usize, Token), Vec<Action>>;
-type DecisionTable = Vec<IndexMap<Token, Action>>;
+pub type Conflicts = IndexMap<(usize, Token), Vec<Action>>;
+pub type DecisionTable = Vec<IndexMap<Token, Action>>;
 pub fn build(
     entry_point: &str,
     grammar: Vec<Rule>,

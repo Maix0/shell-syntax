@@ -1,5 +1,14 @@
 use std::hash::Hash;
 use indexmap::Equivalent;
+
+mod gmr_to_lr;
+pub use gmr_to_lr::*;
+
+mod parsergen;
+pub use parsergen::*;
+
+pub mod fmt;
+
 // use xml_w3c::{Grammar, Production, Rule};
 
 type CheapClone<T> = std::rc::Rc<T>;
@@ -162,12 +171,6 @@ impl From<Token> for RuleName {
         Self::Named(val.get_str())
     }
 }
-
-mod gmr_to_lr;
-pub use gmr_to_lr::*;
-
-mod parsergen;
-pub use parsergen::*;
 
 /*
 loop {
