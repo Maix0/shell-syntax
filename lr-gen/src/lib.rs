@@ -1,83 +1,14 @@
 extern crate xml_w3c;
 
-use std::collections::HashSet;
-use std::fmt::Write;
-use std::hash::Hash;
-use xml_w3c::{Grammar, Production, Rule};
+// use xml_w3c::{Grammar, Production, Rule};
 
-mod commented;
-mod gmr_to_lr;
-mod operators;
+// mod gmr_to_lr;
+// pub use gmr_to_lr::*;
+
+
 mod parsergen;
-mod table;
+pub use parsergen::*;
 
-pub use parsergen::build;
-
-pub use gmr_to_lr::*;
-
-type Crc<T> = std::rc::Rc<T>;
-
-#[derive(Clone, Debug)]
-pub enum LR1Token {
-    Terminal(char),
-    NonTerminal(Crc<str>),
-    EndOfInput,
-}
-
-impl std::hash::Hash for LR1Token {
-    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        let s = match self {
-            Self::Terminal(_) => "__char_builtin__",
-            Self::EndOfInput => "__eof_builtin__",
-            Self::NonTerminal(val) => val,
-        };
-
-        s.hash(state);
-    }
-}
-
-impl PartialEq for LR1Token {
-    fn eq(&self, other: &Self) -> bool {
-        let s = match self {
-            Self::Terminal(_) => "__char_builtin__",
-            Self::EndOfInput => "__eof_builtin__",
-            Self::NonTerminal(val) => val,
-        };
-        let o = match other {
-            Self::Terminal(_) => "__char_builtin__",
-            Self::EndOfInput => "__eof_builtin__",
-            Self::NonTerminal(val) => val,
-        };
-        s == o
-    }
-}
-
-impl Eq for LR1Token {}
-
-impl LR1Token {
-    fn _into_non_terminal(&self) -> Self {
-        thread_local! {
-            static CHAR_BUILTIN: LR1Token = LR1Token::NonTerminal("__char_builtin__".into());
-            static EOF_BUILTIN: LR1Token = LR1Token::NonTerminal("__eof_builtin__".into());
-        }
-        match self {
-            Self::Terminal(_) => CHAR_BUILTIN.with(|r| r.clone()),
-            Self::NonTerminal(_) => self.clone(),
-            Self::EndOfInput => EOF_BUILTIN.with(|r| r.clone()),
-        }
-    }
-}
-
-#[derive(Clone, Debug, Hash, Eq, PartialEq)]
-pub struct LR1Item {
-    pub lhs: LR1Token,
-    pub rhs: Vec<LR1Token>,
-}
-
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct LRGrammar {
-    pub rules: Vec<LR1Item>,
-}
 
 /*
 loop {
@@ -117,7 +48,7 @@ loop {
     }
 }
 */
-
+/* 
 pub fn grammar_to_lr(grammar: Grammar) -> Vec<LR1Item> {
     let gmr = {
         let mut g = grammar;
@@ -126,20 +57,16 @@ pub fn grammar_to_lr(grammar: Grammar) -> Vec<LR1Item> {
         g
     };
     let mut out = Vec::new();
-
+    
     for prod in &gmr.rules {
         for item in create_lr_production(prod.1) {
             out.push(item);
         }
     }
-
+    
     out.into_iter()
-        .collect::<HashSet<_>>()
-        .into_iter()
-        .collect::<Vec<_>>()
+    .collect::<HashSet<_>>()
+    .into_iter()
+    .collect::<Vec<_>>()
 }
-
-pub use table::build_parse_table;
-pub use table::print_grammar;
-pub use table::print_item;
-pub use table::print_itemset;
+*/

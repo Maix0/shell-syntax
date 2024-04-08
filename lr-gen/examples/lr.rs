@@ -1,6 +1,3 @@
-
-
-
 extern crate lr_gen;
 extern crate xml_w3c;
 
@@ -56,5 +53,19 @@ fn main() {
     dbg!(out.fin_tabs);
     dbg!(out.conflicts);
     */
-    lr_gen::build();
+    let (conflicts, table) = lr_gen::build(
+        "program",
+        vec![
+            lr_gen::Rule::new("program", &[]),
+            lr_gen::Rule::new("program", &["program", "declaration"]),
+            lr_gen::Rule::new("declaration", &["varDecl"]),
+            lr_gen::Rule::new("declaration", &["staticDecl"]),
+            lr_gen::Rule::new("declaration", &["statement"]),
+        ],
+        vec!["varDecl".into(), "staticDecl".into(), "statement".into()],
+        Default::default(),
+        Default::default(),
+    );
+    println!("conflitcs = {conflicts:?}\n\ntable={table:?}");
+    
 }
