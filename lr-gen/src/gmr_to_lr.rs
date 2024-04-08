@@ -263,3 +263,24 @@ fn handle_choice(
 
     out_name
 }
+
+pub fn grammar_to_lr(grammar: xml_w3c::Grammar) -> Vec<Rule> {
+    let gmr = {
+        let mut g = grammar;
+        g.make_into_single_chars();
+        g.transform_char_classes();
+        g
+    };
+    let mut out = Vec::new();
+
+    for prod in &gmr.rules {
+        for item in create_lr_production(prod.1) {
+            out.push(item);
+        }
+    }
+
+    out.into_iter()
+        .collect::<indexmap::IndexSet<_>>()
+        .into_iter()
+        .collect::<Vec<_>>()
+}

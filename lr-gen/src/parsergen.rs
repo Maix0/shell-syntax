@@ -1,8 +1,8 @@
 use indexmap::IndexMap;
 use indexmap::IndexSet;
 
-use crate::RuleName;
 use crate::Rule;
+use crate::RuleName;
 use crate::Token;
 
 pub fn print_grammar(grammar: &[Rule]) {
@@ -647,22 +647,19 @@ pub fn build(
     wfb_staticraints: Wfb,
     valign_staticraints: Valign,
 ) -> (Conflicts, DecisionTable) {
-    /*let grammar: Vec<Rule> = vec![
+    /*
+    let grammar: Vec<Rule> = vec![
         Rule::new("program", &[]),
         Rule::new("program", &["program", "declaration"]),
         Rule::new("declaration", &["varDecl"]),
         Rule::new("declaration", &["staticDecl"]),
         Rule::new("declaration", &["statement"]),
-    ];*/
+    ];
+    */
     let mut grammar = grammar;
     let mut lexemes = lexemes;
     grammar.insert(0, Rule::entrypoint(entry_point));
-    lexemes.extend(
-        Token::get_char_names()
-            .iter()
-            .cloned()
-            .map(Token::NonTerminal),
-    );
+    lexemes.extend(('\x00'..='\x7f').map(Token::Terminal));
     lexemes.dedup();
 
     let mut itemsets: Vec<Vec<DotRule>> = vec![vec![DotRule::new(0, 0)]];
