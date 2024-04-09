@@ -1,0 +1,6 @@
+lexemes varDecl, constDecl, statement
+program:
+program: program declaration
+declaration: varDecl
+declaration: constDecl
+declaration: statement

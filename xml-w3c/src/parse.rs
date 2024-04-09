@@ -7,6 +7,7 @@ use crate::TokenDefinition;
 
 #[derive(Debug, Clone)]
 pub enum Error {
+    InvalidCharCode,
     WrongChildType,
     ExpectedChar,
     EmptySubRule,

@@ -1,4 +1,4 @@
-#[cfg(feature = "table_display")]
+#[cfg(feature = "table")]
 mod table_display;
 
 struct MAction<'a>(&'a crate::Action);
@@ -104,7 +104,7 @@ impl AsciiCharToStr for char {
 }
 
 #[derive(Debug, Clone, Copy)]
-pub struct TextDisplay<'a>(&'a crate::DecisionTable);
+pub struct TextDisplay<'a>(pub &'a crate::DecisionTable);
 
 impl<'a> std::fmt::Display for TextDisplay<'a> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

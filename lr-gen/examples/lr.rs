@@ -1,7 +1,9 @@
 extern crate lr_gen;
+extern crate stable_eyre;
 extern crate xml_w3c;
 
 fn main() {
+    let _ = stable_eyre::install();
     /*
     let tokens = xml_w3c::TokenDefinition::new();
     let data = xml_w3c::Grammar::from_xml_reader(
@@ -79,5 +81,6 @@ fn main() {
         )
     };
     let (_conflicts, table) = lr_gen::build(data.0.as_str(), data.1, data.2, data.3, data.4);
+    println!("{}", lr_gen::fmt::TextDisplay(&table));
     //println!("conflitcs = {conflicts:?}\n\ntable={table:?}");
 }

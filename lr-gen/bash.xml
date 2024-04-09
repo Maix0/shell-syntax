@@ -1,0 +1,1659 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- converted on Tue Apr 9, 2024, 17:53 (UTC+02) by w3c-to-w3c v0.67 which is Copyright (c)
+2011-2024 by Gunther Rademacher <grd@gmx.net> -->
+<g:grammar xmlns:g="http://www.w3.org/2001/03/XPath/grammar">
+	<g:production name="program">
+		<g:ref name="_statements" />
+	</g:production>
+	<g:production name="_statements">
+		<g:ref name="_statement" />
+		<g:zeroOrMore>
+			<g:ref name="_terminator" />
+			<g:ref name="_statement" />
+		</g:zeroOrMore>
+		<g:optional>
+			<g:ref name="_terminator" />
+		</g:optional>
+	</g:production>
+	<g:production name="_terminated_statement">
+		<g:oneOrMore>
+			<g:ref name="_statement" />
+			<g:ref name="_terminator" />
+		</g:oneOrMore>
+	</g:production>
+	<g:production name="_statement">
+		<g:choice>
+			<g:ref name="_statement_not_subshella" />
+			<g:ref name="subshell" />
+		</g:choice>
+	</g:production>
+	<g:production name="_statement_not_subshell">
+		<g:choice>
+			<g:ref name="redirected_statement" />
+			<g:ref name="variable_assignment" />
+			<g:ref name="variable_assignments" />
+			<g:ref name="command" />
+			<g:ref name="declaration_command" />
+			<g:ref name="unset_command" />
+			<g:ref name="test_command" />
+			<g:ref name="negated_command" />
+			<g:ref name="for_statement" />
+			<g:ref name="c_style_for_statement" />
+			<g:ref name="while_statement" />
+			<g:ref name="if_statement" />
+			<g:ref name="case_statement" />
+			<g:ref name="pipeline" />
+			<g:ref name="list" />
+			<g:ref name="compound_statement" />
+			<g:ref name="function_definition" />
+		</g:choice>
+	</g:production>
+	<g:production name="_statement_not_pipeline">
+		<g:choice>
+			<g:ref name="redirected_statement" />
+			<g:ref name="variable_assignment" />
+			<g:ref name="variable_assignments" />
+			<g:ref name="command" />
+			<g:ref name="declaration_command" />
+			<g:ref name="unset_command" />
+			<g:ref name="test_command" />
+			<g:ref name="negated_command" />
+			<g:ref name="for_statement" />
+			<g:ref name="c_style_for_statement" />
+			<g:ref name="while_statement" />
+			<g:ref name="if_statement" />
+			<g:ref name="case_statement" />
+			<g:ref name="list" />
+			<g:ref name="compound_statement" />
+			<g:ref name="function_definition" />
+			<g:ref name="subshell" />
+		</g:choice>
+	</g:production>
+	<g:production name="redirected_statement">
+		<g:choice>
+			<g:sequence>
+				<g:ref name="_statement" />
+				<g:oneOrMore>
+					<g:choice>
+						<g:ref name="file_redirect" />
+						<g:ref name="heredoc_redirect" />
+					</g:choice>
+				</g:oneOrMore>
+			</g:sequence>
+			<g:sequence>
+				<g:optional>
+					<g:choice>
+						<g:ref name="if_statement" />
+						<g:ref name="while_statement" />
+					</g:choice>
+				</g:optional>
+				<g:ref name="herestring_redirect" />
+			</g:sequence>
+			<g:oneOrMore>
+				<g:ref name="_redirect" />
+			</g:oneOrMore>
+		</g:choice>
+	</g:production>
+	<g:production name="for_statement">
+		<g:choice>
+			<g:string>for</g:string>
+			<g:string>select</g:string>
+		</g:choice>
+		<g:ref name="_simple_variable_name" />
+		<g:optional>
+			<g:string>in</g:string>
+			<g:oneOrMore>
+				<g:ref name="_literal" />
+			</g:oneOrMore>
+		</g:optional>
+		<g:ref name="_terminator" />
+		<g:ref name="do_group" />
+	</g:production>
+	<g:production name="c_style_for_statement">
+		<g:string>for</g:string>
+		<g:string>((</g:string>
+		<g:ref name="_for_body" />
+		<g:string>))</g:string>
+		<g:optional>
+			<g:string>;</g:string>
+		</g:optional>
+		<g:choice>
+			<g:ref name="do_group" />
+			<g:ref name="compound_statement" />
+		</g:choice>
+	</g:production>
+	<g:production name="_for_body">
+		<g:optional>
+			<g:ref name="_c_expression" />
+			<g:zeroOrMore>
+				<g:string>,</g:string>
+				<g:ref name="_c_expression" />
+			</g:zeroOrMore>
+		</g:optional>
+		<g:ref name="_c_terminator" />
+		<g:optional>
+			<g:ref name="_c_expression" />
+			<g:zeroOrMore>
+				<g:string>,</g:string>
+				<g:ref name="_c_expression" />
+			</g:zeroOrMore>
+		</g:optional>
+		<g:ref name="_c_terminator" />
+		<g:optional>
+			<g:ref name="_c_expression" />
+			<g:zeroOrMore>
+				<g:string>,</g:string>
+				<g:ref name="_c_expression" />
+			</g:zeroOrMore>
+		</g:optional>
+	</g:production>
+	<g:production name="_c_expression">
+		<g:choice>
+			<g:ref name="_c_expression_not_assignment" />
+			<g:ref name="_c_variable_assignment" />
+		</g:choice>
+	</g:production>
+	<g:production name="_c_expression_not_assignment">
+		<g:choice>
+			<g:ref name="_c_word" />
+			<g:ref name="simple_expansion" />
+			<g:ref name="expansion" />
+			<g:ref name="number" />
+			<g:ref name="string" />
+			<g:ref name="_c_unary_expression" />
+			<g:ref name="_c_binary_expression" />
+			<g:ref name="_c_postfix_expression" />
+			<g:ref name="_c_parenthesized_expression" />
+			<g:ref name="command_substitution" />
+		</g:choice>
+	</g:production>
+	<g:production name="_c_variable_assignment">
+		<g:ref name="_c_word" />
+		<g:string>=</g:string>
+		<g:ref name="_c_expression" />
+	</g:production>
+	<g:production name="_c_unary_expression">
+		<g:choice>
+			<g:string>++</g:string>
+			<g:string>--</g:string>
+		</g:choice>
+		<g:ref name="_c_expression_not_assignment" />
+	</g:production>
+	<g:production name="_c_binary_expression">
+		<g:ref name="_c_expression_not_assignment" />
+		<g:choice>
+			<g:string>+=</g:string>
+			<g:string>-=</g:string>
+			<g:string>*=</g:string>
+			<g:string>/=</g:string>
+			<g:string>%=</g:string>
+			<g:string>**=</g:string>
+			<g:string>&lt;&lt;=</g:string>
+			<g:string>&gt;&gt;=</g:string>
+			<g:string>&amp;=</g:string>
+			<g:string>^=</g:string>
+			<g:string>|=</g:string>
+			<g:string>||</g:string>
+			<g:string>-o</g:string>
+			<g:string>&amp;&amp;</g:string>
+			<g:string>-a</g:string>
+			<g:string>|</g:string>
+			<g:string>^</g:string>
+			<g:string>&amp;</g:string>
+			<g:string>==</g:string>
+			<g:string>!=</g:string>
+			<g:string>&lt;</g:string>
+			<g:string>&gt;</g:string>
+			<g:string>&lt;=</g:string>
+			<g:string>&gt;=</g:string>
+			<g:string>&lt;&lt;</g:string>
+			<g:string>&gt;&gt;</g:string>
+			<g:string>+</g:string>
+			<g:string>-</g:string>
+			<g:string>*</g:string>
+			<g:string>/</g:string>
+			<g:string>%</g:string>
+			<g:string>**</g:string>
+		</g:choice>
+		<g:ref name="_c_expression_not_assignment" />
+	</g:production>
+	<g:production name="_c_postfix_expression">
+		<g:ref name="_c_expression_not_assignment" />
+		<g:choice>
+			<g:string>++</g:string>
+			<g:string>--</g:string>
+		</g:choice>
+	</g:production>
+	<g:production name="_c_parenthesized_expression">
+		<g:string>(</g:string>
+		<g:ref name="_c_expression" />
+		<g:zeroOrMore>
+			<g:string>,</g:string>
+			<g:ref name="_c_expression" />
+		</g:zeroOrMore>
+		<g:string>)</g:string>
+	</g:production>
+	<g:production name="_c_word">
+		<g:charClass>
+			<g:charRange minChar="a" maxChar="z" />
+			<g:charRange minChar="A" maxChar="Z" />
+			<g:char>_</g:char>
+		</g:charClass>
+		<g:zeroOrMore>
+			<g:charClass>
+				<g:charRange minChar="a" maxChar="z" />
+				<g:charRange minChar="A" maxChar="Z" />
+				<g:charRange minChar="0" maxChar="9" />
+				<g:char>_</g:char>
+			</g:charClass>
+		</g:zeroOrMore>
+	</g:production>
+	<g:production name="while_statement">
+		<g:choice>
+			<g:string>while</g:string>
+			<g:string>until</g:string>
+		</g:choice>
+		<g:ref name="_terminated_statement" />
+		<g:ref name="do_group" />
+	</g:production>
+	<g:production name="do_group">
+		<g:string>do</g:string>
+		<g:optional>
+			<g:ref name="_terminated_statement" />
+		</g:optional>
+		<g:string>done</g:string>
+	</g:production>
+	<g:production name="if_statement">
+		<g:string>if</g:string>
+		<g:ref name="_terminated_statement" />
+		<g:string>then</g:string>
+		<g:optional>
+			<g:ref name="_terminated_statement" />
+		</g:optional>
+		<g:zeroOrMore>
+			<g:ref name="elif_clause" />
+		</g:zeroOrMore>
+		<g:optional>
+			<g:ref name="else_clause" />
+		</g:optional>
+		<g:string>fi</g:string>
+	</g:production>
+	<g:production name="elif_clause">
+		<g:string>elif</g:string>
+		<g:ref name="_terminated_statement" />
+		<g:string>then</g:string>
+		<g:optional>
+			<g:ref name="_terminated_statement" />
+		</g:optional>
+	</g:production>
+	<g:production name="else_clause">
+		<g:string>else</g:string>
+		<g:optional>
+			<g:ref name="_terminated_statement" />
+		</g:optional>
+	</g:production>
+	<g:production name="case_statement">
+		<g:string>case</g:string>
+		<g:ref name="_literal" />
+		<g:optional>
+			<g:ref name="_terminator" />
+		</g:optional>
+		<g:string>in</g:string>
+		<g:optional>
+			<g:ref name="_terminator" />
+		</g:optional>
+		<g:optional>
+			<g:zeroOrMore>
+				<g:ref name="case_item" />
+			</g:zeroOrMore>
+			<g:ref name="last_case_item" />
+		</g:optional>
+		<g:string>esac</g:string>
+	</g:production>
+	<g:production name="case_item">
+		<g:choice>
+			<g:sequence>
+				<g:optional>
+					<g:string>(</g:string>
+				</g:optional>
+				<g:choice>
+					<g:ref name="_literal" />
+					<g:ref name="_extglob_blob" />
+				</g:choice>
+				<g:zeroOrMore>
+					<g:string>|</g:string>
+					<g:choice>
+						<g:ref name="_literal" />
+						<g:ref name="_extglob_blob" />
+					</g:choice>
+				</g:zeroOrMore>
+				<g:string>)</g:string>
+				<g:optional>
+					<g:ref name="_statements" />
+				</g:optional>
+				<g:string>;;</g:string>
+			</g:sequence>
+			<g:string>;&amp;</g:string>
+			<g:string>;;&amp;</g:string>
+		</g:choice>
+	</g:production>
+	<g:production name="last_case_item">
+		<g:optional>
+			<g:string>(</g:string>
+		</g:optional>
+		<g:choice>
+			<g:ref name="_literal" />
+			<g:ref name="_extglob_blob" />
+		</g:choice>
+		<g:zeroOrMore>
+			<g:string>|</g:string>
+			<g:choice>
+				<g:ref name="_literal" />
+				<g:ref name="_extglob_blob" />
+			</g:choice>
+		</g:zeroOrMore>
+		<g:string>)</g:string>
+		<g:optional>
+			<g:ref name="_statements" />
+		</g:optional>
+		<g:optional>
+			<g:string>;;</g:string>
+		</g:optional>
+	</g:production>
+	<g:production name="function_definition">
+		<g:choice>
+			<g:sequence>
+				<g:string>function</g:string>
+				<g:ref name="word" />
+				<g:optional>
+					<g:string>(</g:string>
+					<g:string>)</g:string>
+				</g:optional>
+			</g:sequence>
+			<g:sequence>
+				<g:ref name="word" />
+				<g:string>(</g:string>
+				<g:string>)</g:string>
+			</g:sequence>
+		</g:choice>
+		<g:choice>
+			<g:ref name="compound_statement" />
+			<g:ref name="subshell" />
+			<g:ref name="test_command" />
+			<g:ref name="if_statement" />
+		</g:choice>
+		<g:optional>
+			<g:ref name="_redirect" />
+		</g:optional>
+	</g:production>
+	<g:production name="compound_statement">
+		<g:string>{</g:string>
+		<g:optional>
+			<g:ref name="_terminated_statement" />
+		</g:optional>
+		<g:string>}</g:string>
+	</g:production>
+	<g:production name="subshell">
+		<g:string>(</g:string>
+		<g:ref name="_statements" />
+		<g:string>)</g:string>
+	</g:production>
+	<g:production name="pipeline">
+		<g:ref name="_statement_not_pipeline" />
+		<g:oneOrMore>
+			<g:choice>
+				<g:string>|</g:string>
+				<g:string>|&amp;</g:string>
+			</g:choice>
+			<g:ref name="_statement_not_pipeline" />
+		</g:oneOrMore>
+	</g:production>
+	<g:production name="list">
+		<g:ref name="_statement" />
+		<g:choice>
+			<g:string>&amp;&amp;</g:string>
+			<g:string>||</g:string>
+		</g:choice>
+		<g:ref name="_statement" />
+	</g:production>
+	<g:production name="negated_command">
+		<g:string>!</g:string>
+		<g:choice>
+			<g:ref name="command" />
+			<g:ref name="variable_assignment" />
+			<g:ref name="test_command" />
+			<g:ref name="subshell" />
+		</g:choice>
+	</g:production>
+	<g:production name="test_command">
+		<g:choice>
+			<g:sequence>
+				<g:string>[</g:string>
+				<g:optional>
+					<g:choice>
+						<g:ref name="_expression" />
+						<g:ref name="redirected_statement" />
+					</g:choice>
+				</g:optional>
+				<g:string>]</g:string>
+			</g:sequence>
+			<g:sequence>
+				<g:string>[[</g:string>
+				<g:choice>
+					<g:ref name="_expression" />
+					<g:ref name="_test_command_binary_expression" />
+				</g:choice>
+				<g:string>]]</g:string>
+			</g:sequence>
+			<g:sequence>
+				<g:string>((</g:string>
+				<g:optional>
+					<g:ref name="_expression" />
+				</g:optional>
+				<g:string>))</g:string>
+			</g:sequence>
+		</g:choice>
+	</g:production>
+	<g:production name="_test_command_binary_expression">
+		<g:ref name="_expression" />
+		<g:string>=</g:string>
+		<g:ref name="_regex_no_space" />
+	</g:production>
+	<g:production name="declaration_command">
+		<g:choice>
+			<g:string>declare</g:string>
+			<g:string>typeset</g:string>
+			<g:string>export</g:string>
+			<g:string>readonly</g:string>
+			<g:string>local</g:string>
+		</g:choice>
+		<g:zeroOrMore>
+			<g:choice>
+				<g:ref name="_literal" />
+				<g:ref name="_simple_variable_name" />
+				<g:ref name="variable_assignment" />
+			</g:choice>
+		</g:zeroOrMore>
+	</g:production>
+	<g:production name="unset_command">
+		<g:choice>
+			<g:string>unset</g:string>
+			<g:string>unsetenv</g:string>
+		</g:choice>
+		<g:zeroOrMore>
+			<g:choice>
+				<g:ref name="_literal" />
+				<g:ref name="_simple_variable_name" />
+			</g:choice>
+		</g:zeroOrMore>
+	</g:production>
+	<g:production name="command">
+		<g:zeroOrMore>
+			<g:choice>
+				<g:ref name="variable_assignment" />
+				<g:ref name="_redirect" />
+			</g:choice>
+		</g:zeroOrMore>
+		<g:ref name="command_name" />
+		<g:choice>
+			<g:zeroOrMore>
+				<g:choice>
+					<g:ref name="_literal" />
+					<g:ref name="_bare_dollar" />
+					<g:sequence>
+						<g:choice>
+							<g:string>=~</g:string>
+							<g:string>==</g:string>
+						</g:choice>
+						<g:choice>
+							<g:ref name="_literal" />
+							<g:ref name="regex" />
+						</g:choice>
+					</g:sequence>
+					<g:ref name="herestring_redirect" />
+				</g:choice>
+			</g:zeroOrMore>
+			<g:ref name="subshell" />
+		</g:choice>
+	</g:production>
+	<g:production name="command_name">
+		<g:ref name="_literal" />
+	</g:production>
+	<g:production name="variable_assignment">
+		<g:choice>
+			<g:ref name="variable_name" />
+			<g:ref name="subscript" />
+		</g:choice>
+		<g:choice>
+			<g:string>=</g:string>
+			<g:string>+=</g:string>
+		</g:choice>
+		<g:choice>
+			<g:ref name="_literal" />
+			<g:ref name="array" />
+			<g:ref name="_empty_value" />
+			<g:ref name="_comment_word" />
+		</g:choice>
+	</g:production>
+	<g:production name="variable_assignments">
+		<g:ref name="variable_assignment" />
+		<g:oneOrMore>
+			<g:ref name="variable_assignment" />
+		</g:oneOrMore>
+	</g:production>
+	<g:production name="subscript">
+		<g:ref name="variable_name" />
+		<g:string>[</g:string>
+		<g:choice>
+			<g:ref name="_literal" />
+			<g:ref name="binary_expression" />
+			<g:ref name="unary_expression" />
+			<g:ref name="parenthesized_expression" />
+		</g:choice>
+		<g:optional>
+			<g:ref name="_concat" />
+		</g:optional>
+		<g:string>]</g:string>
+		<g:optional>
+			<g:ref name="_concat" />
+		</g:optional>
+	</g:production>
+	<g:production name="file_redirect">
+		<g:optional>
+			<g:ref name="file_descriptor" />
+		</g:optional>
+		<g:choice>
+			<g:sequence>
+				<g:choice>
+					<g:string>&lt;</g:string>
+					<g:string>&gt;</g:string>
+					<g:string>&gt;&gt;</g:string>
+					<g:string>&amp;&gt;</g:string>
+					<g:string>&amp;&gt;&gt;</g:string>
+					<g:string>&lt;&amp;</g:string>
+					<g:string>&gt;&amp;</g:string>
+					<g:string>&gt;|</g:string>
+				</g:choice>
+				<g:oneOrMore>
+					<g:ref name="_literal" />
+				</g:oneOrMore>
+			</g:sequence>
+			<g:sequence>
+				<g:choice>
+					<g:string>&lt;&amp;-</g:string>
+					<g:string>&gt;&amp;-</g:string>
+				</g:choice>
+				<g:optional>
+					<g:ref name="_literal" />
+				</g:optional>
+			</g:sequence>
+		</g:choice>
+	</g:production>
+	<g:production name="heredoc_redirect">
+		<g:optional>
+			<g:ref name="file_descriptor" />
+		</g:optional>
+		<g:choice>
+			<g:string>&lt;&lt;</g:string>
+			<g:string>&lt;&lt;-</g:string>
+		</g:choice>
+		<g:ref name="heredoc_start" />
+		<g:choice>
+			<g:ref name="_heredoc_pipeline" />
+			<g:sequence>
+				<g:zeroOrMore>
+					<g:ref name="_redirect" />
+				</g:zeroOrMore>
+				<g:optional>
+					<g:ref name="_heredoc_expression" />
+				</g:optional>
+			</g:sequence>
+			<g:ref name="_heredoc_command" />
+		</g:choice>
+		<g:string>#x0A</g:string>
+		<g:choice>
+			<g:ref name="_heredoc_body" />
+			<g:ref name="_simple_heredoc_body" />
+		</g:choice>
+	</g:production>
+	<g:production name="_heredoc_pipeline">
+		<g:choice>
+			<g:string>|</g:string>
+			<g:string>|&amp;</g:string>
+		</g:choice>
+		<g:ref name="_statement" />
+	</g:production>
+	<g:production name="_heredoc_expression">
+		<g:choice>
+			<g:string>||</g:string>
+			<g:string>&amp;&amp;</g:string>
+		</g:choice>
+		<g:ref name="_statement" />
+	</g:production>
+	<g:production name="_heredoc_command">
+		<g:oneOrMore>
+			<g:ref name="_literal" />
+		</g:oneOrMore>
+	</g:production>
+	<g:production name="_heredoc_body">
+		<g:ref name="heredoc_body" />
+		<g:ref name="heredoc_end" />
+	</g:production>
+	<g:production name="heredoc_body">
+		<g:ref name="_heredoc_body_beginning" />
+		<g:zeroOrMore>
+			<g:choice>
+				<g:ref name="expansion" />
+				<g:ref name="simple_expansion" />
+				<g:ref name="command_substitution" />
+				<g:ref name="heredoc_content" />
+			</g:choice>
+		</g:zeroOrMore>
+	</g:production>
+	<g:production name="_simple_heredoc_body">
+		<g:ref name="simple_heredoc_body" />
+		<g:ref name="heredoc_end" />
+	</g:production>
+	<g:production name="herestring_redirect">
+		<g:optional>
+			<g:ref name="file_descriptor" />
+		</g:optional>
+		<g:string>&lt;&lt;&lt;</g:string>
+		<g:ref name="_literal" />
+	</g:production>
+	<g:production name="_redirect">
+		<g:choice>
+			<g:ref name="file_redirect" />
+			<g:ref name="herestring_redirect" />
+		</g:choice>
+	</g:production>
+	<g:production name="_expression">
+		<g:choice>
+			<g:ref name="_literal" />
+			<g:ref name="unary_expression" />
+			<g:ref name="ternary_expression" />
+			<g:ref name="binary_expression" />
+			<g:ref name="postfix_expression" />
+			<g:ref name="parenthesized_expression" />
+		</g:choice>
+	</g:production>
+	<g:production name="binary_expression">
+		<g:ref name="_expression" />
+		<g:choice>
+			<g:sequence>
+				<g:choice>
+					<g:string>+=</g:string>
+					<g:string>-=</g:string>
+					<g:string>*=</g:string>
+					<g:string>/=</g:string>
+					<g:string>%=</g:string>
+					<g:string>**=</g:string>
+					<g:string>&lt;&lt;=</g:string>
+					<g:string>&gt;&gt;=</g:string>
+					<g:string>&amp;=</g:string>
+					<g:string>^=</g:string>
+					<g:string>|=</g:string>
+					<g:string>=</g:string>
+					<g:string>=~</g:string>
+					<g:string>||</g:string>
+					<g:string>&amp;&amp;</g:string>
+					<g:string>|</g:string>
+					<g:string>^</g:string>
+					<g:string>&amp;</g:string>
+					<g:string>&lt;</g:string>
+					<g:string>&gt;</g:string>
+					<g:string>&lt;=</g:string>
+					<g:string>&gt;=</g:string>
+					<g:ref name="test_operator" />
+					<g:string>&lt;&lt;</g:string>
+					<g:string>&gt;&gt;</g:string>
+					<g:string>+</g:string>
+					<g:string>-</g:string>
+					<g:string>*</g:string>
+					<g:string>/</g:string>
+					<g:string>%</g:string>
+					<g:string>**</g:string>
+				</g:choice>
+				<g:ref name="_expression" />
+			</g:sequence>
+			<g:sequence>
+				<g:choice>
+					<g:string>==</g:string>
+					<g:string>!=</g:string>
+				</g:choice>
+				<g:choice>
+					<g:ref name="_expression" />
+					<g:ref name="_extglob_blob" />
+				</g:choice>
+			</g:sequence>
+			<g:sequence>
+				<g:string>=~</g:string>
+				<g:ref name="_regex_no_space" />
+			</g:sequence>
+		</g:choice>
+	</g:production>
+	<g:production name="ternary_expression">
+		<g:ref name="_expression" />
+		<g:string>?</g:string>
+		<g:ref name="_expression" />
+		<g:string>:</g:string>
+		<g:ref name="_expression" />
+	</g:production>
+	<g:production name="unary_expression">
+		<g:choice>
+			<g:string>++</g:string>
+			<g:string>--</g:string>
+			<g:string>-</g:string>
+			<g:string>+</g:string>
+			<g:string>~</g:string>
+			<g:string>!</g:string>
+			<g:ref name="test_operator" />
+		</g:choice>
+		<g:ref name="_expression" />
+	</g:production>
+	<g:production name="postfix_expression">
+		<g:ref name="_expression" />
+		<g:choice>
+			<g:string>++</g:string>
+			<g:string>--</g:string>
+		</g:choice>
+	</g:production>
+	<g:production name="parenthesized_expression">
+		<g:string>(</g:string>
+		<g:ref name="_expression" />
+		<g:string>)</g:string>
+	</g:production>
+	<g:production name="_literal">
+		<g:choice>
+			<g:ref name="concatenation" />
+			<g:ref name="_primary_expression" />
+			<g:oneOrMore>
+				<g:ref name="_special_character" />
+			</g:oneOrMore>
+		</g:choice>
+	</g:production>
+	<g:production name="_primary_expression">
+		<g:choice>
+			<g:ref name="word" />
+			<g:ref name="test_operator" />
+			<g:ref name="string" />
+			<g:ref name="raw_string" />
+			<g:ref name="translated_string" />
+			<g:ref name="ansi_c_string" />
+			<g:ref name="number" />
+			<g:ref name="expansion" />
+			<g:ref name="simple_expansion" />
+			<g:ref name="command_substitution" />
+			<g:ref name="process_substitution" />
+			<g:ref name="arithmetic_expansion" />
+			<g:ref name="brace_expression" />
+		</g:choice>
+	</g:production>
+	<g:production name="arithmetic_expansion">
+		<g:choice>
+			<g:sequence>
+				<g:choice>
+					<g:string>$((</g:string>
+					<g:string>((</g:string>
+				</g:choice>
+				<g:ref name="_arithmetic_expression" />
+				<g:zeroOrMore>
+					<g:string>,</g:string>
+					<g:ref name="_arithmetic_expression" />
+				</g:zeroOrMore>
+				<g:string>))</g:string>
+			</g:sequence>
+			<g:sequence>
+				<g:string>$[</g:string>
+				<g:ref name="_arithmetic_expression" />
+				<g:string>]</g:string>
+			</g:sequence>
+		</g:choice>
+	</g:production>
+	<g:production name="brace_expression">
+		<g:ref name="_brace_start" />
+		<g:oneOrMore>
+			<g:charClass>
+				<g:charRange minChar="0" maxChar="9" />
+			</g:charClass>
+		</g:oneOrMore>
+		<g:string>..</g:string>
+		<g:oneOrMore>
+			<g:charClass>
+				<g:charRange minChar="0" maxChar="9" />
+			</g:charClass>
+		</g:oneOrMore>
+		<g:string>}</g:string>
+	</g:production>
+	<g:production name="_arithmetic_expression">
+		<g:choice>
+			<g:ref name="_arithmetic_literal" />
+			<g:ref name="_arithmetic_unary_expression" />
+			<g:ref name="_arithmetic_ternary_expression" />
+			<g:ref name="_arithmetic_binary_expression" />
+			<g:ref name="_arithmetic_postfix_expression" />
+			<g:ref name="_arithmetic_parenthesized_expression" />
+			<g:ref name="command_substitution" />
+		</g:choice>
+	</g:production>
+	<g:production name="_arithmetic_literal">
+		<g:choice>
+			<g:ref name="number" />
+			<g:ref name="subscript" />
+			<g:ref name="simple_expansion" />
+			<g:ref name="expansion" />
+			<g:ref name="_simple_variable_name" />
+			<g:ref name="variable_name" />
+			<g:ref name="string" />
+		</g:choice>
+	</g:production>
+	<g:production name="_arithmetic_binary_expression">
+		<g:ref name="_arithmetic_expression" />
+		<g:choice>
+			<g:string>+=</g:string>
+			<g:string>-=</g:string>
+			<g:string>*=</g:string>
+			<g:string>/=</g:string>
+			<g:string>%=</g:string>
+			<g:string>**=</g:string>
+			<g:string>&lt;&lt;=</g:string>
+			<g:string>&gt;&gt;=</g:string>
+			<g:string>&amp;=</g:string>
+			<g:string>^=</g:string>
+			<g:string>|=</g:string>
+			<g:string>=</g:string>
+			<g:string>=~</g:string>
+			<g:string>||</g:string>
+			<g:string>&amp;&amp;</g:string>
+			<g:string>|</g:string>
+			<g:string>^</g:string>
+			<g:string>&amp;</g:string>
+			<g:string>==</g:string>
+			<g:string>!=</g:string>
+			<g:string>&lt;</g:string>
+			<g:string>&gt;</g:string>
+			<g:string>&lt;=</g:string>
+			<g:string>&gt;=</g:string>
+			<g:string>&lt;&lt;</g:string>
+			<g:string>&gt;&gt;</g:string>
+			<g:string>+</g:string>
+			<g:string>-</g:string>
+			<g:string>*</g:string>
+			<g:string>/</g:string>
+			<g:string>%</g:string>
+			<g:string>**</g:string>
+		</g:choice>
+		<g:ref name="_arithmetic_expression" />
+	</g:production>
+	<g:production name="_arithmetic_ternary_expression">
+		<g:ref name="_arithmetic_expression" />
+		<g:string>?</g:string>
+		<g:ref name="_arithmetic_expression" />
+		<g:string>:</g:string>
+		<g:ref name="_arithmetic_expression" />
+	</g:production>
+	<g:production name="_arithmetic_unary_expression">
+		<g:choice>
+			<g:string>++</g:string>
+			<g:string>--</g:string>
+			<g:string>-</g:string>
+			<g:string>+</g:string>
+			<g:string>~</g:string>
+			<g:string>!</g:string>
+		</g:choice>
+		<g:ref name="_arithmetic_expression" />
+	</g:production>
+	<g:production name="_arithmetic_postfix_expression">
+		<g:ref name="_arithmetic_expression" />
+		<g:choice>
+			<g:string>++</g:string>
+			<g:string>--</g:string>
+		</g:choice>
+	</g:production>
+	<g:production name="_arithmetic_parenthesized_expression">
+		<g:string>(</g:string>
+		<g:ref name="_arithmetic_expression" />
+		<g:string>)</g:string>
+	</g:production>
+	<g:production name="concatenation">
+		<g:choice>
+			<g:ref name="_primary_expression" />
+			<g:ref name="_special_character" />
+		</g:choice>
+		<g:oneOrMore>
+			<g:choice>
+				<g:ref name="_concat" />
+				<g:sequence>
+					<g:string>`</g:string>
+					<g:zeroOrMore>
+						<g:charClass>
+							<g:char> </g:char>
+							<g:charCode value="09" />
+							<g:charCode value="0A" />
+							<g:charCode value="0B" />
+							<g:charCode value="0C" />
+							<g:charCode value="0D" />
+						</g:charClass>
+					</g:zeroOrMore>
+					<g:string>`</g:string>
+				</g:sequence>
+			</g:choice>
+			<g:choice>
+				<g:ref name="_primary_expression" />
+				<g:ref name="_special_character" />
+				<g:ref name="_comment_word" />
+				<g:ref name="_bare_dollar" />
+			</g:choice>
+		</g:oneOrMore>
+		<g:optional>
+			<g:ref name="_concat" />
+			<g:string>$</g:string>
+		</g:optional>
+		<g:string>+</g:string>
+	</g:production>
+	<g:production name="_special_character">
+		<g:choice>
+			<g:string>{</g:string>
+			<g:string>}</g:string>
+			<g:string>[</g:string>
+			<g:string>]</g:string>
+		</g:choice>
+	</g:production>
+	<g:production name="string">
+		<g:string>"</g:string>
+		<g:zeroOrMore>
+			<g:choice>
+				<g:sequence>
+					<g:optional>
+						<g:string>$</g:string>
+					</g:optional>
+					<g:ref name="string_content" />
+				</g:sequence>
+				<g:ref name="expansion" />
+				<g:ref name="simple_expansion" />
+				<g:ref name="command_substitution" />
+				<g:ref name="arithmetic_expansion" />
+			</g:choice>
+			<g:optional>
+				<g:ref name="_concat" />
+			</g:optional>
+		</g:zeroOrMore>
+		<g:optional>
+			<g:string>$</g:string>
+		</g:optional>
+		<g:string>"</g:string>
+	</g:production>
+	<g:production name="string_content">
+		<g:oneOrMore>
+			<g:choice>
+				<g:complement>
+					<g:charClass>
+						<g:char>"</g:char>
+						<g:char>`</g:char>
+						<g:char>$</g:char>
+						<g:char>\</g:char>
+						<g:charCode value="0D" />
+						<g:charCode value="0A" />
+					</g:charClass>
+				</g:complement>
+				<g:sequence>
+					<g:string>\</g:string>
+					<g:choice>
+						<g:string>.</g:string>
+						<g:sequence>
+							<g:optional>
+								<g:string>#x0D</g:string>
+							</g:optional>
+							<g:string>#x0A</g:string>
+						</g:sequence>
+					</g:choice>
+				</g:sequence>
+			</g:choice>
+		</g:oneOrMore>
+	</g:production>
+	<g:production name="translated_string">
+		<g:string>$</g:string>
+		<g:ref name="string" />
+	</g:production>
+	<g:production name="array">
+		<g:string>(</g:string>
+		<g:zeroOrMore>
+			<g:ref name="_literal" />
+		</g:zeroOrMore>
+		<g:string>)</g:string>
+	</g:production>
+	<g:production name="raw_string">
+		<g:string>'</g:string>
+		<g:zeroOrMore>
+			<g:complement>
+				<g:charClass>
+					<g:char>'</g:char>
+				</g:charClass>
+			</g:complement>
+		</g:zeroOrMore>
+		<g:string>'</g:string>
+	</g:production>
+	<g:production name="ansi_c_string">
+		<g:string>\$'</g:string>
+		<g:zeroOrMore>
+			<g:choice>
+				<g:complement>
+					<g:charClass>
+						<g:char>'</g:char>
+					</g:charClass>
+				</g:complement>
+				<g:string>\'</g:string>
+			</g:choice>
+		</g:zeroOrMore>
+		<g:string>'</g:string>
+	</g:production>
+	<g:production name="number">
+		<g:optional>
+			<g:string>-</g:string>
+		</g:optional>
+		<g:optional>
+			<g:string>0x</g:string>
+		</g:optional>
+		<g:oneOrMore>
+			<g:charClass>
+				<g:charRange minChar="0" maxChar="9" />
+			</g:charClass>
+		</g:oneOrMore>
+		<g:optional>
+			<g:string>#</g:string>
+			<g:choice>
+				<g:oneOrMore>
+					<g:charClass>
+						<g:charRange minChar="0" maxChar="9" />
+						<g:charRange minChar="A" maxChar="Z" />
+						<g:charRange minChar="a" maxChar="z" />
+						<g:char>@</g:char>
+						<g:char>_</g:char>
+					</g:charClass>
+				</g:oneOrMore>
+				<g:ref name="expansion" />
+				<g:ref name="command_substitution" />
+			</g:choice>
+		</g:optional>
+	</g:production>
+	<g:production name="simple_expansion">
+		<g:string>$</g:string>
+		<g:choice>
+			<g:ref name="_simple_variable_name" />
+			<g:ref name="_multiline_variable_name" />
+			<g:ref name="_special_variable_name" />
+			<g:ref name="variable_name" />
+			<g:string>!</g:string>
+			<g:string>#</g:string>
+		</g:choice>
+	</g:production>
+	<g:production name="string_expansion">
+		<g:string>$</g:string>
+		<g:ref name="string" />
+	</g:production>
+	<g:production name="expansion">
+		<g:string>${</g:string>
+		<g:optional>
+			<g:ref name="_expansion_body" />
+		</g:optional>
+		<g:string>}</g:string>
+	</g:production>
+	<g:production name="_expansion_body">
+		<g:choice>
+			<g:sequence>
+				<g:choice>
+					<g:ref name="_external_expansion_sym_hash" />
+					<g:ref name="_external_expansion_sym_bang" />
+					<g:ref name="_external_expansion_sym_equal" />
+					<g:sequence>
+						<g:optional>
+							<g:choice>
+								<g:string>#</g:string>
+								<g:string>!</g:string>
+								<g:string>=</g:string>
+							</g:choice>
+						</g:optional>
+						<g:choice>
+							<g:ref name="subscript" />
+							<g:ref name="_simple_variable_name" />
+							<g:ref name="_special_variable_name" />
+							<g:ref name="command_substitution" />
+						</g:choice>
+					</g:sequence>
+				</g:choice>
+				<g:zeroOrMore>
+					<g:choice>
+						<g:ref name="_external_expansion_sym_hash" />
+						<g:ref name="_external_expansion_sym_bang" />
+						<g:ref name="_external_expansion_sym_equal" />
+					</g:choice>
+				</g:zeroOrMore>
+			</g:sequence>
+			<g:sequence>
+				<g:optional>
+					<g:string>!</g:string>
+				</g:optional>
+				<g:choice>
+					<g:ref name="variable_name" />
+					<g:ref name="_simple_variable_name" />
+					<g:ref name="_special_variable_name" />
+					<g:ref name="subscript" />
+				</g:choice>
+				<g:choice>
+					<g:ref name="_expansion_expression" />
+					<g:ref name="_expansion_regex" />
+					<g:ref name="_expansion_regex_replacement" />
+					<g:ref name="_expansion_regex_removal" />
+					<g:ref name="_expansion_max_length" />
+					<g:ref name="_expansion_operator" />
+				</g:choice>
+			</g:sequence>
+			<g:sequence>
+				<g:string>!</g:string>
+				<g:choice>
+					<g:ref name="_simple_variable_name" />
+					<g:ref name="variable_name" />
+				</g:choice>
+				<g:optional>
+					<g:choice>
+						<g:string>@</g:string>
+						<g:string>*</g:string>
+					</g:choice>
+				</g:optional>
+			</g:sequence>
+		</g:choice>
+	</g:production>
+	<g:production name="_expansion_expression">
+		<g:choice>
+			<g:string>=</g:string>
+			<g:string>:=</g:string>
+			<g:string>-</g:string>
+			<g:string>:-</g:string>
+			<g:string>+</g:string>
+			<g:string>:+</g:string>
+			<g:string>?</g:string>
+			<g:string>:?</g:string>
+		</g:choice>
+		<g:optional>
+			<g:choice>
+				<g:ref name="_concatenation_in_expansion" />
+				<g:ref name="command_substitution" />
+				<g:ref name="word" />
+				<g:ref name="expansion" />
+				<g:ref name="simple_expansion" />
+				<g:ref name="array" />
+				<g:ref name="string" />
+				<g:ref name="raw_string" />
+				<g:ref name="ansi_c_string" />
+				<g:ref name="_expansion_word" />
+			</g:choice>
+		</g:optional>
+	</g:production>
+	<g:production name="_expansion_regex">
+		<g:choice>
+			<g:string>#</g:string>
+			<g:ref name="_immediate_double_hash" />
+			<g:string>%</g:string>
+			<g:string>%%</g:string>
+		</g:choice>
+		<g:zeroOrMore>
+			<g:choice>
+				<g:ref name="regex" />
+				<g:string>)</g:string>
+				<g:ref name="string" />
+				<g:ref name="raw_string" />
+				<g:oneOrMore>
+					<g:charClass>
+						<g:char> </g:char>
+						<g:charCode value="09" />
+						<g:charCode value="0A" />
+						<g:charCode value="0B" />
+						<g:charCode value="0C" />
+						<g:charCode value="0D" />
+					</g:charClass>
+				</g:oneOrMore>
+			</g:choice>
+		</g:zeroOrMore>
+	</g:production>
+	<g:production name="_expansion_regex_replacement">
+		<g:choice>
+			<g:string>/</g:string>
+			<g:string>//</g:string>
+			<g:string>/#</g:string>
+			<g:string>/%</g:string>
+		</g:choice>
+		<g:choice>
+			<g:sequence>
+				<g:optional>
+					<g:ref name="string" />
+				</g:optional>
+				<g:optional>
+					<g:ref name="_regex_no_slash" />
+				</g:optional>
+			</g:sequence>
+			<g:ref name="command_substitution" />
+		</g:choice>
+		<g:optional>
+			<g:string>/</g:string>
+			<g:optional>
+				<g:choice>
+					<g:ref name="_primary_expression" />
+					<g:oneOrMore>
+						<g:ref name="_special_character" />
+					</g:oneOrMore>
+					<g:sequence>
+						<g:optional>
+							<g:ref name="command_substitution" />
+						</g:optional>
+						<g:ref name="_expansion_word" />
+					</g:sequence>
+					<g:ref name="_concatenation_in_expansion" />
+					<g:ref name="array" />
+				</g:choice>
+				<g:optional>
+					<g:string>/</g:string>
+				</g:optional>
+			</g:optional>
+		</g:optional>
+	</g:production>
+	<g:production name="_expansion_regex_removal">
+		<g:choice>
+			<g:string>,</g:string>
+			<g:string>,,</g:string>
+			<g:string>^</g:string>
+			<g:string>^^</g:string>
+		</g:choice>
+		<g:optional>
+			<g:ref name="regex" />
+		</g:optional>
+	</g:production>
+	<g:production name="_expansion_max_length">
+		<g:string>:</g:string>
+		<g:optional>
+			<g:choice>
+				<g:ref name="_simple_variable_name" />
+				<g:ref name="number" />
+				<g:ref name="arithmetic_expansion" />
+				<g:ref name="expansion" />
+				<g:ref name="parenthesized_expression" />
+				<g:ref name="command_substitution" />
+				<g:ref name="_expansion_max_length_binary_expression" />
+				<g:string>#x0A</g:string>
+			</g:choice>
+		</g:optional>
+		<g:optional>
+			<g:string>:</g:string>
+			<g:optional>
+				<g:ref name="simple_expansion" />
+			</g:optional>
+			<g:optional>
+				<g:choice>
+					<g:ref name="_simple_variable_name" />
+					<g:ref name="number" />
+					<g:ref name="arithmetic_expansion" />
+					<g:ref name="expansion" />
+					<g:ref name="parenthesized_expression" />
+					<g:ref name="command_substitution" />
+					<g:ref name="_expansion_max_length_binary_expression" />
+					<g:string>#x0A</g:string>
+				</g:choice>
+			</g:optional>
+		</g:optional>
+	</g:production>
+	<g:production name="_expansion_max_length_expression">
+		<g:choice>
+			<g:ref name="_simple_variable_name" />
+			<g:ref name="number" />
+			<g:ref name="expansion" />
+			<g:ref name="_expansion_max_length_binary_expression" />
+		</g:choice>
+	</g:production>
+	<g:production name="_expansion_max_length_binary_expression">
+		<g:ref name="_expansion_max_length_expression" />
+		<g:choice>
+			<g:string>+</g:string>
+			<g:string>-</g:string>
+			<g:string>*</g:string>
+			<g:string>/</g:string>
+			<g:string>%</g:string>
+		</g:choice>
+		<g:ref name="_expansion_max_length_expression" />
+	</g:production>
+	<g:production name="_expansion_operator">
+		<g:string>@</g:string>
+		<g:choice>
+			<g:string>U</g:string>
+			<g:string>u</g:string>
+			<g:string>L</g:string>
+			<g:string>Q</g:string>
+			<g:string>E</g:string>
+			<g:string>P</g:string>
+			<g:string>A</g:string>
+			<g:string>K</g:string>
+			<g:string>a</g:string>
+			<g:string>k</g:string>
+		</g:choice>
+	</g:production>
+	<g:production name="_concatenation_in_expansion">
+		<g:choice>
+			<g:ref name="word" />
+			<g:ref name="variable_name" />
+			<g:ref name="simple_expansion" />
+			<g:ref name="expansion" />
+			<g:ref name="string" />
+			<g:ref name="raw_string" />
+			<g:ref name="ansi_c_string" />
+			<g:ref name="command_substitution" />
+			<g:ref name="_expansion_word" />
+			<g:ref name="array" />
+			<g:ref name="process_substitution" />
+		</g:choice>
+		<g:oneOrMore>
+			<g:choice>
+				<g:ref name="_concat" />
+				<g:sequence>
+					<g:string>`</g:string>
+					<g:zeroOrMore>
+						<g:charClass>
+							<g:char> </g:char>
+							<g:charCode value="09" />
+							<g:charCode value="0A" />
+							<g:charCode value="0B" />
+							<g:charCode value="0C" />
+							<g:charCode value="0D" />
+						</g:charClass>
+					</g:zeroOrMore>
+					<g:string>`</g:string>
+				</g:sequence>
+			</g:choice>
+			<g:choice>
+				<g:ref name="word" />
+				<g:ref name="variable_name" />
+				<g:ref name="simple_expansion" />
+				<g:ref name="expansion" />
+				<g:ref name="string" />
+				<g:ref name="raw_string" />
+				<g:ref name="ansi_c_string" />
+				<g:ref name="command_substitution" />
+				<g:ref name="_expansion_word" />
+				<g:ref name="array" />
+				<g:ref name="process_substitution" />
+			</g:choice>
+		</g:oneOrMore>
+	</g:production>
+	<g:production name="command_substitution">
+		<g:choice>
+			<g:sequence>
+				<g:string>$(</g:string>
+				<g:choice>
+					<g:ref name="_statements" />
+					<g:ref name="file_redirect" />
+				</g:choice>
+				<g:string>)</g:string>
+			</g:sequence>
+			<g:sequence>
+				<g:choice>
+					<g:string>`</g:string>
+					<g:string>$`</g:string>
+				</g:choice>
+				<g:ref name="_statements" />
+				<g:string>`</g:string>
+			</g:sequence>
+		</g:choice>
+	</g:production>
+	<g:production name="process_substitution">
+		<g:choice>
+			<g:string>&lt;(</g:string>
+			<g:string>&gt;(</g:string>
+		</g:choice>
+		<g:ref name="_statements" />
+		<g:string>)</g:string>
+	</g:production>
+	<g:production name="_extglob_blob">
+		<g:ref name="extglob_pattern" />
+		<g:optional>
+			<g:choice>
+				<g:ref name="string" />
+				<g:ref name="expansion" />
+				<g:ref name="command_substitution" />
+			</g:choice>
+			<g:optional>
+				<g:ref name="extglob_pattern" />
+			</g:optional>
+		</g:optional>
+	</g:production>
+	<g:production name="comment">
+		<g:zeroOrMore>
+			<g:string>#.</g:string>
+		</g:zeroOrMore>
+	</g:production>
+	<g:production name="_comment_word">
+		<g:choice>
+			<g:complement>
+				<g:charClass>
+					<g:char>'</g:char>
+					<g:char>"</g:char>
+					<g:char>&lt;</g:char>
+					<g:char>&gt;</g:char>
+					<g:char>{</g:char>
+					<g:char>}</g:char>
+					<g:char>(</g:char>
+					<g:char>)</g:char>
+					<g:char>`</g:char>
+					<g:char>$</g:char>
+					<g:char>|</g:char>
+					<g:char>&amp;</g:char>
+					<g:char>;</g:char>
+					<g:char>\</g:char>
+					<g:char> </g:char>
+					<g:charCode value="5B" />
+					<g:charCode value="5D" />
+					<g:charCode value="09" />
+					<g:charCode value="0A" />
+					<g:charCode value="0B" />
+					<g:charCode value="0C" />
+					<g:charCode value="0D" />
+				</g:charClass>
+			</g:complement>
+			<g:sequence>
+				<g:string>\</g:string>
+				<g:complement>
+					<g:charClass>
+						<g:char> </g:char>
+						<g:charCode value="09" />
+						<g:charCode value="0A" />
+						<g:charCode value="0B" />
+						<g:charCode value="0C" />
+						<g:charCode value="0D" />
+					</g:charClass>
+				</g:complement>
+			</g:sequence>
+		</g:choice>
+		<g:zeroOrMore>
+			<g:choice>
+				<g:complement>
+					<g:charClass>
+						<g:char>'</g:char>
+						<g:char>"</g:char>
+						<g:char>&lt;</g:char>
+						<g:char>&gt;</g:char>
+						<g:char>{</g:char>
+						<g:char>}</g:char>
+						<g:char>(</g:char>
+						<g:char>)</g:char>
+						<g:char>`</g:char>
+						<g:char>$</g:char>
+						<g:char>|</g:char>
+						<g:char>&amp;</g:char>
+						<g:char>;</g:char>
+						<g:char>\</g:char>
+						<g:char> </g:char>
+						<g:charCode value="5B" />
+						<g:charCode value="5D" />
+						<g:charCode value="09" />
+						<g:charCode value="0A" />
+						<g:charCode value="0B" />
+						<g:charCode value="0C" />
+						<g:charCode value="0D" />
+					</g:charClass>
+				</g:complement>
+				<g:sequence>
+					<g:string>\</g:string>
+					<g:complement>
+						<g:charClass>
+							<g:char> </g:char>
+							<g:charCode value="09" />
+							<g:charCode value="0A" />
+							<g:charCode value="0B" />
+							<g:charCode value="0C" />
+							<g:charCode value="0D" />
+						</g:charClass>
+					</g:complement>
+				</g:sequence>
+				<g:string>\ </g:string>
+			</g:choice>
+		</g:zeroOrMore>
+	</g:production>
+	<g:production name="_simple_variable_name">
+		<g:oneOrMore>
+			<g:charClass>
+				<g:charRange minChar="a" maxChar="z" />
+				<g:charRange minChar="A" maxChar="Z" />
+				<g:char>_</g:char>
+			</g:charClass>
+		</g:oneOrMore>
+	</g:production>
+	<g:production name="_multiline_variable_name">
+		<g:oneOrMore>
+			<g:choice>
+				<g:charClass>
+					<g:charRange minChar="a" maxChar="z" />
+					<g:charRange minChar="A" maxChar="Z" />
+					<g:char>_</g:char>
+				</g:charClass>
+				<g:sequence>
+					<g:optional>
+						<g:string>\#x0D</g:string>
+					</g:optional>
+					<g:string>#x0A</g:string>
+				</g:sequence>
+			</g:choice>
+		</g:oneOrMore>
+	</g:production>
+	<g:production name="_special_variable_name">
+		<g:choice>
+			<g:string>*</g:string>
+			<g:string>@</g:string>
+			<g:string>?</g:string>
+			<g:string>!</g:string>
+			<g:string>#</g:string>
+			<g:string>-</g:string>
+			<g:string>$</g:string>
+			<g:string>0</g:string>
+			<g:string>_</g:string>
+		</g:choice>
+	</g:production>
+	<g:production name="word">
+		<g:choice>
+			<g:complement>
+				<g:charClass>
+					<g:char>'</g:char>
+					<g:char>"</g:char>
+					<g:char>&lt;</g:char>
+					<g:char>&gt;</g:char>
+					<g:char>{</g:char>
+					<g:char>}</g:char>
+					<g:char>(</g:char>
+					<g:char>)</g:char>
+					<g:char>`</g:char>
+					<g:char>$</g:char>
+					<g:char>|</g:char>
+					<g:char>&amp;</g:char>
+					<g:char>;</g:char>
+					<g:char>\</g:char>
+					<g:char> </g:char>
+					<g:charCode value="23" />
+					<g:charCode value="5B" />
+					<g:charCode value="5D" />
+					<g:charCode value="09" />
+					<g:charCode value="0A" />
+					<g:charCode value="0B" />
+					<g:charCode value="0C" />
+					<g:charCode value="0D" />
+				</g:charClass>
+			</g:complement>
+			<g:sequence>
+				<g:string>\</g:string>
+				<g:complement>
+					<g:charClass>
+						<g:char> </g:char>
+						<g:charCode value="09" />
+						<g:charCode value="0A" />
+						<g:charCode value="0B" />
+						<g:charCode value="0C" />
+						<g:charCode value="0D" />
+					</g:charClass>
+				</g:complement>
+			</g:sequence>
+		</g:choice>
+		<g:zeroOrMore>
+			<g:choice>
+				<g:complement>
+					<g:charClass>
+						<g:char>'</g:char>
+						<g:char>"</g:char>
+						<g:char>&lt;</g:char>
+						<g:char>&gt;</g:char>
+						<g:char>{</g:char>
+						<g:char>}</g:char>
+						<g:char>(</g:char>
+						<g:char>)</g:char>
+						<g:char>`</g:char>
+						<g:char>$</g:char>
+						<g:char>|</g:char>
+						<g:char>&amp;</g:char>
+						<g:char>;</g:char>
+						<g:char>\</g:char>
+						<g:char> </g:char>
+						<g:charCode value="5B" />
+						<g:charCode value="5D" />
+						<g:charCode value="09" />
+						<g:charCode value="0A" />
+						<g:charCode value="0B" />
+						<g:charCode value="0C" />
+						<g:charCode value="0D" />
+					</g:charClass>
+				</g:complement>
+				<g:sequence>
+					<g:string>\</g:string>
+					<g:complement>
+						<g:charClass>
+							<g:char> </g:char>
+							<g:charCode value="09" />
+							<g:charCode value="0A" />
+							<g:charCode value="0B" />
+							<g:charCode value="0C" />
+							<g:charCode value="0D" />
+						</g:charClass>
+					</g:complement>
+				</g:sequence>
+				<g:string>\ </g:string>
+			</g:choice>
+		</g:zeroOrMore>
+	</g:production>
+	<g:production name="_c_terminator">
+		<g:choice>
+			<g:string>;</g:string>
+			<g:string>#x0A</g:string>
+			<g:string>&amp;</g:string>
+		</g:choice>
+	</g:production>
+	<g:production name="_terminator">
+		<g:choice>
+			<g:string>;</g:string>
+			<g:string>;;</g:string>
+			<g:string>#x0A</g:string>
+			<g:string>&amp;</g:string>
+		</g:choice>
+	</g:production>
+</g:grammar>

@@ -26,9 +26,20 @@ pub enum RawCharClass {
         end_char: String,
     },
     Char {
-        #[serde(rename = "$text")]
+        #[serde(rename = "$value", default = "new_string_default")]
         chr: String,
     },
+    CharCode {
+        #[serde(rename = "@value")]
+        chr: String,
+    },
+}
+
+fn new_string_default() -> String {
+    println!("DEFAULT STRING!");
+    let backtrace = std::backtrace::Backtrace::capture();
+    println!("{backtrace}");
+    String::from("G")
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -39,7 +50,7 @@ pub enum RawRule {
         ref_name: String,
     },
     String {
-        #[serde(rename = "$text")]
+        #[serde(rename = "$value")]
         val: String,
     },
     Choice {
@@ -97,6 +108,15 @@ impl RawCharClass {
                 Ok(CharClass::CharRange {
                     range: (start_char.chars().next().unwrap())
                         ..=(end_char.chars().next().unwrap()),
+                })
+            }
+            Self::CharCode { mut chr } => {
+                chr.make_ascii_lowercase();
+                Ok(CharClass::Char {
+                    chr: char::from_u32(
+                        u32::from_str_radix(&chr, 16).map_err(|_| Error::InvalidCharCode)?,
+                    )
+                    .ok_or(Error::InvalidCharCode)?,
                 })
             }
         }
