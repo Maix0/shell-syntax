@@ -124,7 +124,7 @@ fn display_as_text(
                             crate::Token::NonTerminal(r) if &**r == "__entry_point__" => {
                                 ENTRY_POINT
                             }
-                            crate::Token::NonTerminal(r) => &r,
+                            crate::Token::NonTerminal(r) => r,
                         }
                         .len()
                     })

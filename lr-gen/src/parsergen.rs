@@ -347,8 +347,9 @@ fn follow_lexemes(args: FollowLexemesArgs) -> FollowLexemes {
         let _has_wfb: bool = wfb_staticraints.contains(&DotRule::new(rule, index));
         if index < rhs.len() {
             rhs0 = Some(rhs[index].clone());
-            let k = index + 1;
-            for k in (index + 1)..rhs.len() {
+            let mut k = index + 1;
+            for v in (index + 1)..rhs.len() {
+                k = v;
                 if valign_staticraints.contains(&DotRule::new(rule, k)) {
                     symbols[&rhs0.clone().unwrap()].insert("wfb".into());
                 } else {

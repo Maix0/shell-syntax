@@ -60,12 +60,10 @@ fn main() {
         )
     } else {
         let tokens = xml_w3c::TokenDefinition::new();
-        unsafe {
-            xml_w3c::BUFFER.buffer =
-                std::fs::read_to_string(std::env::args().skip(1).next().unwrap()).unwrap();
-        }
-        let data =
-            xml_w3c::Grammar::from_xml_reader(unsafe { &mut xml_w3c::BUFFER }, tokens).unwrap();
+        let file = std::io::BufReader::new(
+            std::fs::File::open(std::env::args().skip(1).next().unwrap()).unwrap(),
+        );
+        let data = xml_w3c::Grammar::from_xml_reader(file, tokens).unwrap();
         let grammar = lr_gen::grammar_to_lr(data);
         let entry_point = std::env::args().skip(2).next().unwrap();
         let lexemes = Vec::new();
@@ -78,6 +76,7 @@ fn main() {
         )
     };
     let (_conflicts, table) = lr_gen::build(data.0.as_str(), data.1, data.2, data.3, data.4);
+    println!("table has been built");
     println!("{}", lr_gen::fmt::TextDisplay(&table));
     //println!("conflitcs = {conflicts:?}\n\ntable={table:?}");
 }
