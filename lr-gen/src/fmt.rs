@@ -1,6 +1,3 @@
-#[cfg(feature = "table")]
-mod table_display;
-
 struct MAction<'a>(&'a crate::Action);
 const ENTRY_POINT: &str = "⊤";
 
