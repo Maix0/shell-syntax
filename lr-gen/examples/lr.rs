@@ -60,15 +60,12 @@ fn main() {
         )
     } else {
         let tokens = xml_w3c::TokenDefinition::new();
-        let data = xml_w3c::Grammar::from_xml_reader(
-            std::io::BufReader::new(
-                std::fs::read(std::env::args().skip(1).next().unwrap())
-                    .unwrap()
-                    .as_slice(),
-            ),
-            tokens,
-        )
-        .unwrap();
+        unsafe {
+            xml_w3c::BUFFER.buffer =
+                std::fs::read_to_string(std::env::args().skip(1).next().unwrap()).unwrap();
+        }
+        let data =
+            xml_w3c::Grammar::from_xml_reader(unsafe { &mut xml_w3c::BUFFER }, tokens).unwrap();
         let grammar = lr_gen::grammar_to_lr(data);
         let entry_point = std::env::args().skip(2).next().unwrap();
         let lexemes = Vec::new();

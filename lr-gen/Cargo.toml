@@ -11,7 +11,7 @@ indexmap = "2.2.6"
 xml-w3c = { version = "0.1.0", path = "../xml-w3c" }
 
 [features]
-default = ["table-tty"]
+default = []
 table = ["dep:comfy-table"]
 table-tty = ["table", "comfy-table/tty"]
 

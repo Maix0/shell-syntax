@@ -286,7 +286,7 @@ fn first_lexemes(grammar: &[Rule], empty: &EmptySymbols, lexemes: &Vec<Token>) -
         rep = false;
         for (lhs, rhs0) in &routes {
             let n = symbols[*lhs].len();
-            let vals = symbols[*rhs0].clone();
+            let vals = symbols.get(*rhs0).cloned().unwrap_or_default();
             symbols[*lhs].extend(vals);
             rep |= n < symbols[*lhs].len();
         }
@@ -352,7 +352,10 @@ fn follow_lexemes(args: FollowLexemesArgs) -> FollowLexemes {
                 if valign_staticraints.contains(&DotRule::new(rule, k)) {
                     symbols[&rhs0.clone().unwrap()].insert("wfb".into());
                 } else {
-                    symbols[&rhs0.clone().unwrap()].extend(first[&rhs[k]].clone());
+                    symbols
+                        .entry(rhs0.clone().unwrap())
+                        .or_default()
+                        .extend(first.get(&rhs[k]).cloned().unwrap_or_default());
                 }
                 if empty.iter().all(|x| *x != rhs[k]) {
                     break;
@@ -581,7 +584,7 @@ fn build_decision_table(state: DecisionTableState, k: usize, args: Vec<Vec<Token
                 if conflicts.contains_key(&(k, sym.clone())) {
                     conflicts[&(k, sym.clone())].push(action);
                 } else {
-                    conflicts[&(k, sym.clone())] = vec![tab![][&sym].clone(), action];
+                    conflicts.insert((k, sym.clone()), vec![tab![][&sym].clone(), action]);
                     had_conflicts.push((k, sym));
                 }
             } else {

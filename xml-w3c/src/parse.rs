@@ -4,6 +4,7 @@ mod fmt;
 mod serde_mod;
 
 use crate::TokenDefinition;
+pub use serde_mod::{MyBufRead, BUFFER};
 
 #[derive(Debug, Clone)]
 pub enum Error {

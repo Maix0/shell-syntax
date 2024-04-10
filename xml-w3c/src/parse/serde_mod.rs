@@ -1,3 +1,5 @@
+use std::ops::Add;
+
 use crate::Token;
 
 use super::*;
@@ -35,11 +37,36 @@ pub enum RawCharClass {
     },
 }
 
+pub static mut BUFFER: MyBufRead = MyBufRead {
+    buffer: String::new(),
+    pos: 0,
+};
+
+pub struct MyBufRead {
+    pub buffer: String,
+    pub pos: usize,
+}
+
+impl std::io::Read for MyBufRead {
+    fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
+        let max_len = buf.len().min(self.buffer.bytes().len() - self.pos);
+        (&mut buf[..max_len]).copy_from_slice(&self.buffer.as_bytes()[self.pos..][..max_len]);
+        self.pos += max_len;
+        Ok(max_len)
+    }
+}
+
+impl std::io::BufRead for MyBufRead {
+    fn fill_buf(&mut self) -> std::io::Result<&[u8]> {
+        Ok(&self.buffer.as_bytes()[self.buffer.len().min(self.pos)..])
+    }
+    fn consume(&mut self, amt: usize) {
+        self.pos += amt
+    }
+}
+
 fn new_string_default() -> String {
-    println!("DEFAULT STRING!");
-    let backtrace = std::backtrace::Backtrace::capture();
-    println!("{backtrace}");
-    String::from("G")
+    panic!("It seems you have an issue with an <g:char> block. Currenty the only known cause is a <g:char> that denotes a space character (so `<g:char> </g:char>`). please make sure the change every instance of those to a <g:charCode value=\"20\" />")
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
