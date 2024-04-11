@@ -1,5 +1,5 @@
-use std::hash::Hash;
 use indexmap::Equivalent;
+use std::hash::Hash;
 
 mod gmr_to_lr;
 pub use gmr_to_lr::*;
@@ -8,8 +8,6 @@ mod parsergen;
 pub use parsergen::*;
 
 pub mod fmt;
-
-// use xml_w3c::{Grammar, Production, Rule};
 
 type CheapClone<T> = std::rc::Rc<T>;
 
@@ -73,10 +71,22 @@ impl Token {
         match self {
             Token::Terminal(c) => {
                 assert!(c.is_ascii(), "this parser currently only support ascii");
-                Self::get_char_names()[(*c as u32).to_le_bytes()[3] as usize].clone()
+                Self::get_char_names()[(*c as u32) as u8 as usize].clone()
             }
             Token::NonTerminal(s) => s.clone(),
         }
+    }
+}
+
+impl std::cmp::PartialOrd for Token {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.get_str().cmp(&other.get_str()))
+    }
+}
+
+impl std::cmp::Ord for Token {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.get_str().cmp(&other.get_str())
     }
 }
 

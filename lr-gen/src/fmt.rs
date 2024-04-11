@@ -1,5 +1,6 @@
 struct MAction<'a>(&'a crate::Action);
 const ENTRY_POINT: &str = "⊤";
+const END_OF_INPUT: &str = "$";
 
 macro_rules! colors {
     {$($name:ident => $val:literal),*$(,)?} => {
@@ -14,6 +15,8 @@ macro_rules! colors {
 
 colors! {
     RESET           => 0,
+    BOLD            => 1,
+
     RED             => 31,
     GREEN           => 32,
     YELLOW          => 33,
@@ -21,6 +24,7 @@ colors! {
     MAGENTA         => 35,
     CYAN            => 36,
     WHITE           => 37,
+
     BRIGHT_RED      => 91,
     BRIGHT_GREEN    => 92,
     BRIGHT_YELLOW   => 93,
@@ -33,17 +37,22 @@ colors! {
 impl<'a> std::fmt::Display for MAction<'a> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self.0 {
+            crate::Action::Error => write!(f, "{BOLD}{RED}Error!{RESET}"),
+            crate::Action::Accept => write!(f, "{BOLD}{BRIGHT_GREEN}Accept{RESET}"),
             crate::Action::Other { ty, goto, mode } => match ty {
-                0 => write!(f, "Goto {GREEN}{goto}{RESET} ({CYAN}{mode:b}{RESET})"),
+                0 => write!(
+                    f,
+                    "{BOLD}{YELLOW}Shift{RESET} {CYAN}1{RESET} token and goto {GREEN}{goto}{RESET} ({CYAN}{mode:b}{RESET})"
+                ),
                 _ => write!(
                     f,
-                    "Unknown ty={RED}{ty}{RESET}, goto={GREEN}{goto}{RESET} ({CYAN}{mode:b}{RESET})"
+                    "{BOLD}{BRIGHT_RED}Unknown{RESET} ty={RED}{ty}{RESET}, goto={GREEN}{goto}{RESET} ({CYAN}{mode:b}{RESET})"
                 ),
             },
             crate::Action::Reduce { name, len, goto } => {
                 write!(
                     f,
-                    "Reduce to '{MAGENTA}{}{RESET}' with {CYAN}{len}{RESET} tokens and goto {GREEN}{goto}{RESET}",
+                    "{BOLD}{BRIGHT_BLUE}Reduce{RESET} to '{MAGENTA}{}{RESET}' with {CYAN}{len}{RESET} tokens and goto {GREEN}{goto}{RESET}",
                     match name {
                         crate::RuleName::EntryPoint => ENTRY_POINT,
                         crate::RuleName::Named(r) => &r,
@@ -124,6 +133,9 @@ fn display_as_text(
                             crate::Token::NonTerminal(r) if &**r == "__entry_point__" => {
                                 ENTRY_POINT
                             }
+                            crate::Token::NonTerminal(r) if &**r == "__end_of_input__" => {
+                                END_OF_INPUT
+                            }
                             crate::Token::NonTerminal(r) => r,
                         }
                         .len()
@@ -138,29 +150,39 @@ fn display_as_text(
     };
 
     for (index, states) in table.iter().enumerate() {
+        let mut written = false;
         for (lhs, rhs) in states {
-            writeln!(
-                fmt,
-                "{index}:\t{}",
-                format_args!(
-                    "{}{:^max_len$}{RESET}: {}",
-                    match lhs {
-                        crate::Token::Terminal(_) => BRIGHT_YELLOW,
-                        _ => MAGENTA,
-                    },
-                    match lhs {
-                        crate::Token::Terminal(c) => c.ascii_str().expect("Char isn't ascii"),
-                        crate::Token::NonTerminal(r) if &**r == "__entry_point__" => ENTRY_POINT,
-                        crate::Token::NonTerminal(r) => r,
-                    },
-                    MAction(rhs)
-                )
-            )?;
+            if !matches!(rhs, crate::Action::Error) || fmt.alternate() {
+                written = true;
+                writeln!(
+                    fmt,
+                    "{index}:\t{}",
+                    format_args!(
+                        "{}{:^max_len$}{RESET}: {}",
+                        match lhs {
+                            crate::Token::Terminal(_) => BRIGHT_YELLOW,
+                            crate::Token::NonTerminal(r) if &**r == "__end_of_input__" =>
+                                BRIGHT_CYAN,
+                            _ => MAGENTA,
+                        },
+                        match lhs {
+                            crate::Token::Terminal(c) => c.ascii_str().expect("Char isn't ascii"),
+                            crate::Token::NonTerminal(r) if &**r == "__entry_point__" =>
+                                ENTRY_POINT,
+                            crate::Token::NonTerminal(r) if &**r == "__end_of_input__" => {
+                                END_OF_INPUT
+                            }
+                            crate::Token::NonTerminal(r) => r,
+                        },
+                        MAction(rhs)
+                    )
+                )?;
+            }
         }
-        if !states.is_empty() {
+        if written {
             writeln!(fmt)?;
-        } else {
-            writeln!(fmt, "\n{index}:\n")?;
+        } else if fmt.alternate() {
+            writeln!(fmt, "{index}:\n")?;
         }
     }
     Ok(())

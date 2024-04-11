@@ -464,6 +464,8 @@ pub enum Action {
         goto: usize,
         mode: Mode,
     },
+    Accept,
+    Error,
 }
 
 struct DecisionTableState<'a> {
@@ -728,5 +730,27 @@ pub fn build(
         vec![vec![RuleName::EntryPoint.into()]],
     );
 
+    if let Some(t) = fin_tabs.first_mut() {
+        t.insert(
+            Token::NonTerminal("__end_of_input__".into()),
+            Action::Accept,
+        );
+    }
+
+    let all_keys = fin_tabs
+        .iter()
+        .flat_map(|i| i.keys())
+        .cloned()
+        .chain(('\x00'..='\x7f').map(Token::Terminal))
+        .collect::<IndexSet<_>>();
+
+    fin_tabs.iter_mut().for_each(|m| {
+        for k in &all_keys {
+            if !m.contains_key(k) {
+                m.insert(k.clone(), Action::Error);
+            }
+        }
+        m.sort_keys()
+    });
     (conflicts, fin_tabs)
 }

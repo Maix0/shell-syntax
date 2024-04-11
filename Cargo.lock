@@ -108,7 +108,6 @@ name = "lr-gen"
 version = "0.1.0"
 dependencies = [
  "indexmap",
- "stable-eyre",
  "xml-w3c",
 ]
 

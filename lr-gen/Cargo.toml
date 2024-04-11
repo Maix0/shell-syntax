@@ -8,6 +8,3 @@ edition = "2021"
 [dependencies]
 indexmap = "2.2.6"
 xml-w3c = { version = "0.1.0", path = "../xml-w3c" }
-
-[dev-dependencies]
-stable-eyre = "0.2.2"
