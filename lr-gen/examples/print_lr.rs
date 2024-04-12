@@ -63,7 +63,7 @@ fn main() {
             print!(
                 "{} ",
                 match t {
-                    lr_gen::Token::Terminal(c) => format!("\"{c}\""),
+                    lr_gen::Token::Terminal(c) => format!("\"{}\"", c.escape_default()),
                     lr_gen::Token::NonTerminal(r) => r.to_string(),
                 }
             );

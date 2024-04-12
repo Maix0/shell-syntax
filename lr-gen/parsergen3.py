@@ -270,7 +270,7 @@ def st_0(tok, ch):
         tok.pos = (tok.column, tok.line)
         tok.state = "st_string"
     else:
-        print(("error token: {} at {}".format(ch, tok.line)))
+        print("error token: {} at {}:{}".format(ch, tok.line, tok.column))
         advance("error", ch, (tok.column, tok.line), (tok.column + 1, tok.line))
 
 
@@ -315,6 +315,9 @@ def st_string(tok, ch):
     else:
         tok.inp.append(ch)
 
+def st_error(tok, ch):
+    print("error with token {} at line {} and column {}".format(ch, tok.line, tok.column))
+    
 
 # Collects every 'st_' into a dictionary.
 tokenize_n = dict((k, v) for k, v in list(globals().items()) if k.startswith("st_"))
@@ -626,7 +629,10 @@ def first_lexemes():
         rep = False
         for lhs, rhs0 in routes:
             n = len(symbols[lhs])
-            symbols[lhs].update(symbols[rhs0])
+            s = set()
+            if rhs0 in symbols:
+                s = symbols[rhs0]
+            symbols[lhs].update(s)
             rep |= n < len(symbols[lhs])
     return symbols
 
@@ -668,6 +674,8 @@ def examine(xxx_todo_changeme2):
     w = set()
     rhs = grammar[rule][1]
     for i in range(index + 1, len(rhs)):
+        if rhs[i] not in vfirst:
+            continue
         w.update(vfirst[rhs[i]])
         if (rule, i) in valign_constraints:
             w.update(first[rhs[i]])
