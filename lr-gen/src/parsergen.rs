@@ -731,11 +731,12 @@ pub fn build(
     );
 
     if let Some(t) = fin_tabs.first_mut() {
-        t.insert(
-            Token::NonTerminal("__end_of_input__".into()),
-            Action::Accept,
-        );
+        t.insert(RuleName::EntryPoint.into(), Action::Accept);
     }
+    for t in Token::get_char_names().iter() {
+        print!("{t} ");
+    }
+    println!();
 
     let all_keys = fin_tabs
         .iter()

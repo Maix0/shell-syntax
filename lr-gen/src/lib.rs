@@ -25,8 +25,8 @@ pub enum Token {
 
 #[derive(Debug, Clone, Eq, Hash, PartialEq)]
 pub struct Rule {
-    lhs: RuleName,
-    rhs: Vec<Token>,
+    pub lhs: RuleName,
+    pub rhs: Vec<Token>,
 }
 
 impl Rule {
